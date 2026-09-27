@@ -209,8 +209,11 @@ class _SessionDetailBodyState() extends State<SessionDetailBody> with SingleTick
       messages: messages,
       hasOlderMessages: state.olderMessagesCursor != null,
     );
-    // Numbers arrive once the bridge counts the prompts before the page.
-    return const TranscriptPromptListBuilder().build(messages: messages, turns: turns, userMessagesBefore: null);
+    return const TranscriptPromptListBuilder().build(
+      messages: messages,
+      turns: turns,
+      userMessagesBefore: state.userMessagesBeforeOldest,
+    );
   }
 
   /// Takes the Prompts screen back the way it came; one still settling from
