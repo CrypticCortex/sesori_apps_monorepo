@@ -23,6 +23,24 @@ It is temporary upgrade compatibility, never a second runtime persistence path.
 The read-only wallet reference informed selective encryption/typed primitives;
 its password UX, CBC fallback and unrelated application models are not adopted.
 
+## Requested recovery policy revision — 2026-09-26
+
+The user superseded the merged blocking recovery policy: failed mobile migration
+must reset scoped local storage and continue to the normal logged-out screen.
+They explicitly chose normal account/server analytics behavior afterward,
+accepting that a pending local-only opt-out can be lost; no additional recovery
+consent state is wanted. Successful migration still preserves existing data.
+
+Reset-to-login #1779 and the corrective durable recovery fence #1808 are merged.
+The latter removes rejected stale-session restoration/overwrite exceptions.
+After physical-iPhone qualification, the user explicitly accepted **all remaining
+qualification gaps**. The final PR closes this plan with the named unvalidated
+coverage in [QUALIFICATION.md](QUALIFICATION.md), not a claim that L3/L4 fully passed.
+The deprecated importer remains required for supported public-mobile upgrades.
+
+Native happy-path evidence now includes [production-scope mobile fixtures](MOBILE_MIGRATION.md).
+Those observations do not qualify this requested failure-policy revision.
+
 ## Current behavior and compatibility boundary
 
 - Both clients use shared Drift repositories after #1751. Only their scoped
@@ -412,8 +430,11 @@ The complete consumer cutover at `ea7550e` (base `064dcf8`) measures 1,650 lines
 1,545 authored and 105 generated. It passes 153 focused tests and five module/
 shell analyses. Standalone recovery #1749 and atomic consumer cutover #1751
 merged. No temporary backend or compatibility adapter bridged this split.
-Regression reconciliation starts from fixed main `6056290`; required native
-qualification still precedes plan retirement.
+Regression reconciliation #1758 merged from fixed main `6056290`. Qualification
+on fixed main `d550856` now has bounded mobile development and signed macOS native
+evidence in [QUALIFICATION.md](QUALIFICATION.md). The remaining required matrix
+preceded retirement; the user's explicit final coverage acceptance is recorded in
+[QUALIFICATION.md](QUALIFICATION.md), without reclassifying unexecuted gates as passed.
 
 | Milestone | Exact PR title | Scope / expected result | Estimate |
 |---|---|---|---|
@@ -430,7 +451,7 @@ qualification still precedes plan retirement.
 | 5 | 🌿 [desktop-master-key-storage] Complete shared persistence regression documentation [step 11/14] | #1758 merged; explicit three-desktop replacement coverage. | Completed: 139 authored |
 | 5.a | ⚙️ [desktop-master-key-storage] Recover failed mobile migrations to login [step 12/14] | User-requested scoped reset, normal login/analytics, focused tests and reconciled regression/DI guidance. Remove blocking recovery UI. | 900–1,400 including generated deletions |
 | 5.b | 🚧 [desktop-master-key-storage] Preserve recovery intent across client restarts [step 13/14] | User rejected stale-session restoration/overwrite exceptions merged in #1779. Persist recovery-only intent, fail secret use until completion, replace obsolete bypass tests/docs. | 400–800 authored |
-| 6 | ⚙️ [desktop-master-key-storage] Qualify and retire shared client persistence [step 14/14] | Required full recorded matrix and bounded evidence; retire plan only after qualification passes or precisely named gaps are accepted, not the still-required deprecated importer. | Partial evidence retained; final delivery blocked |
+| 6 | ⚙️ [desktop-master-key-storage] Qualify and retire shared client persistence [step 14/14] | Required full recorded matrix and bounded evidence; retire plan only after qualification passes or precisely named gaps are accepted, not the still-required deprecated importer. | Final delivery authorized: remaining gaps explicitly accepted |
 
 Dependencies follow row order. Generated schema stays with source. No temporary
 schemas, compatibility adapters or incomplete mobile cutover to manufacture a

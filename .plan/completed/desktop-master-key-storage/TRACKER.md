@@ -4,15 +4,18 @@
 
 - Status: #1751 and regression reconciliation #1758 merged. Native qualification
   is partial. #1779 merged as `8fe13f3`; later merged recovery exceptions were
-  explicitly rejected by the user. Correcting restart safety before qualification.
+  explicitly rejected by the user. Corrective #1808 merged with 22 passing checks;
+  physical-iPhone follow-up passed five phases. The user explicitly accepted all
+  remaining qualification gaps; final delivery may close the plan with those gaps
+  recorded as unvalidated in QUALIFICATION.md. Importer retirement is not authorized.
 - User approved one Drift backend on both mobile and desktop, with mobile data
   migration in this work. No postponed mobile-native runtime backend.
 - Migration must be isolated and explicitly deprecated from its first commit,
   with a retirement condition and deletion checklist.
-- Current branch: `sesori/desktop-master-key-storage-recovery-fence`, from fixed
-  main `83a00c8` in the supplied worktree. No additional worktree is allowed.
+- Current branch: `sesori/desktop-master-key-storage-qualification`, retaining
+  checkpoint `975e286` and merging current main after #1808. No additional worktree is allowed.
   Qualification checkpoint `975e286` remains preserved on its published branch;
-  no final qualification PR is open.
+  final qualification PR is being prepared with explicit coverage acceptance.
 - #1717 is closed as superseded, not merged. Its published desktop checkpoint
   `4a27888` and the full shared checkpoint `de38951` remain in history.
 - One open PR and at most one local successor. Current total: **14 PRs** after
@@ -34,8 +37,8 @@
 | 4.d — Both-client cutover | Merged | #1751; architecture approved, 24 reconciled shell cases plus retained auth/core evidence, README feedback fixed and 34 passing checks. |
 | 5 — Regression reconciliation | Merged | #1758; explicit replacement on all three desktops, 139 authored lines, 7 checks passed at readiness. |
 | 5.a — Failed-import reset follow-up | Merged | #1779 (PR 12), `8fe13f3`; later changes allowed stale-session exceptions, rejected by user. |
-| 5.b — Durable recovery intent | Verified locally | PR 13; 134 focused cases, four owning analyses. Reset-only intent, blocked secrets until completion, obsolete exceptions removed. Architecture review `77c2c6f9` approved `83a00c8..498200d` (19 paths, 482 authored lines). |
-| 6 — Required qualification/retirement | Partial / blocked | PR 14; checkpoint `975e286` retains mobile/signed-macOS evidence. Missing native matrix still blocks retirement. |
+| 5.b — Durable recovery intent | Merged | #1808 (PR 13), 22 passing checks; 134 focused cases, four owning analyses. Reset-only intent, blocked secrets until completion, obsolete exceptions removed. Architecture review `77c2c6f9` approved `83a00c8..498200d` (19 paths, 482 authored lines). |
+| 6 — Qualification/plan closure | Accepted with gaps | PR 14; checkpoint `975e286` retains initial evidence; `11d5697` records physical iPhone migration/recovery. User accepts every outstanding documented qualification gate; importer remains. |
 
 ## Decisions and code-informed constraints
 
@@ -84,8 +87,12 @@
   that new local logout revokes old internal builds' separate sessions.
 - One-time mobile import may require native access; normal plaintext operations
   do not. One master-item lookup does not promise zero OS authorization dialogs.
-- No running app/helper launches, personal credential reads/Keychain changes or
-  wallet modifications are authorized by fixture tests or plan editing.
+- Personal app/helper launches, personal credential reads/Keychain changes and
+  wallet modifications remain unauthorized. On 2026-09-26 the user approved
+  test-only existing CI credentials, then explicitly requested the global
+  `sesori-local-testing` skill and its isolated slot-owned development surfaces.
+  Later authorization covered Sesori-only physical-iPhone testing, not device
+  erase/restore. The final explicit acceptance covers remaining test gaps only.
 
 ## Evidence retained, not overclaimed
 
@@ -238,7 +245,8 @@
 - Signed macOS roundtrip/reopen evidence from Actions run `36221737896` is reused
   with source/digest checks. Windows/Linux native execution, all-desktop new-format
   replacement, native denied-access/reset, actual distributed upgrades and hardware
-  backup/restore remain missing. No physical devices or coverage waiver exist.
+  backup/restore remained missing at that checkpoint. Subsequent physical-device
+  evidence and the user's final coverage acceptance are recorded in QUALIFICATION.md.
 - Reset plan review `18a9a582-7357-41c4-be8f-8085526806ed` approved the scoped
   ownership/startup/cache design, with B-Client in scope and no violations.
   B-Bridge/B-Shared were skipped. This is design approval, not native qualification.
@@ -256,9 +264,11 @@
 - Two font-loaded normal-login/email-form previews passed and were inspected in
   light/dark themes. Fixture-only images/GIF are on `pr-media` at `bd7f0d6934`;
   they do not demonstrate native migration or a real authentication request.
-- Before resuming qualification, update its retained native fixture's
-  `_NoLegacyReads` for the new `clear()` capability without reseeding or erasing
-  retained slot data. Required new reset/native adverse-state coverage remains.
+- Qualification resumed after #1808. `_NoLegacyReads` rejects `clear()` as well
+  as import reads/deletes. The authorized physical iPhone passed seed/migrate/reopen
+  and persisted-pending reset/fresh-secret reopen. Normal debug app restored;
+  no device wipe or broad Keychain changes. Android long-standing login retention
+  is user-reported evidence. Native adverse/restore gaps remain accepted, not passed.
 - #1779 initial CI found two omitted in-memory test implementations of the new
   `SecureStorageRepository.reset()` contract, in auth-manager and desktop smoke
   fixtures. Both now clear their in-memory maps. Their 53/1 cases and owning
