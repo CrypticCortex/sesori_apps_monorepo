@@ -74,6 +74,9 @@ class const PregoGroupedRow({
 
   /// Custom leading widget (e.g. an avatar). Takes precedence over [icon].
   final Widget? leading,
+
+  /// Width [leading] occupies, so the divider starts under the title.
+  final double leadingWidth = _leadingSlotWidth,
   required final Widget title,
   final Widget? subtitle,
 
@@ -150,7 +153,7 @@ class const PregoGroupedRow({
 
     // Hairline between rows, aligned with the title column like the Figma
     // rows' top border (which starts after the leading slot).
-    final dividerIndent = PregoSpacing.xl + (leading != null ? _leadingSlotWidth + PregoSpacing.md : 0.0);
+    final dividerIndent = PregoSpacing.xl + (leading != null ? leadingWidth + PregoSpacing.md : 0.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
