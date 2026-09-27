@@ -8,6 +8,7 @@ import "../../motion/prego_reduced_motion.dart";
 import "../../theme/prego_theme.dart";
 import "../buttons/prego_buttons_solid.dart";
 import "../navigation/prego_top_bar_inset.dart";
+import "../navigation/prego_top_navigation.dart";
 
 /// Visual variant for [PregoPopupAlertsNotifications].
 enum PregoPopupAlertsNotificationsVariant() {
@@ -290,20 +291,18 @@ class const _WideEllipseGradientTransform(final double scaleX) extends GradientT
 /// A stable presentation target that can be captured before asynchronous work.
 final class PregoPopupAlertPresenter._({
   required final OverlayState _overlay,
-  required final double _topInset,
+  required final OverlayState _rootOverlay,
+  required final BuildContext? _source,
 }) {
   static final Expando<_PregoPopupAlertPresentation> _presentations = Expando<_PregoPopupAlertPresentation>();
 
   /// Captures the nearest overlay so an alert can still be shown after the
   /// source widget is removed or a modal route is dismissed.
   static PregoPopupAlertPresenter of(BuildContext context) {
-    final overlay = Overlay.of(context);
     return PregoPopupAlertPresenter._(
-      overlay: overlay,
-      topInset: pregoTopBarInsetOf(
-        context: context,
-        fallbackTopPadding: MediaQuery.paddingOf(overlay.context).top,
-      ),
+      overlay: Overlay.of(context),
+      rootOverlay: Overlay.of(context, rootOverlay: true),
+      source: context,
     );
   }
 
@@ -313,15 +312,24 @@ final class PregoPopupAlertPresenter._({
   /// geometry, falling back to the plain top-bar inset when no Prego scaffold
   /// is mounted.
   static PregoPopupAlertPresenter fromOverlayState(OverlayState overlay) {
-    return PregoPopupAlertPresenter._(
-      overlay: overlay,
-      topInset:
-          pregoRootTopBarInsetFor(overlay) ??
-          pregoTopBarInsetOf(
-            context: overlay.context,
-            fallbackTopPadding: MediaQuery.paddingOf(overlay.context).top,
-          ),
-    );
+    return PregoPopupAlertPresenter._(overlay: overlay, rootOverlay: overlay, source: null);
+  }
+
+  /// Resolves the live top-bar geometry when the alert is shown, not when the
+  /// presenter is captured: a scaffold captured before asynchronous work may
+  /// have been disposed since, together with its banner-height notifier.
+  PregoTopBarGeometry _currentTopBar() {
+    final source = _source;
+    final scoped = source != null && source.mounted ? pregoTopBarGeometryOf(context: source) : null;
+    // A context above its screen's scaffold, such as the screen widget's own,
+    // sees no scope; the topmost scaffold's published geometry still clears
+    // that screen's banner.
+    return scoped ??
+        pregoRootTopBarInsetFor(_rootOverlay) ??
+        (
+          baseInset: MediaQuery.paddingOf(_rootOverlay.context).top + PregoTopNavigation.barHeight,
+          bannerHeight: const AlwaysStoppedAnimation<double>(0),
+        );
   }
 
   /// Shows an alert above the current route and replaces any alert already
@@ -336,6 +344,7 @@ final class PregoPopupAlertPresenter._({
     if (!_overlay.mounted) return;
 
     _presentations[_overlay]?.dismiss(immediately: true);
+    final topBar = _currentTopBar();
     late final _PregoPopupAlertPresentation presentation;
     final entry = OverlayEntry(
       builder: (context) => _PregoPopupAlertOverlay(
@@ -353,7 +362,7 @@ final class PregoPopupAlertPresenter._({
           presentation.remove();
         },
         presentation: presentation,
-        topInset: _topInset,
+        topBar: topBar,
       ),
     );
     presentation = _PregoPopupAlertPresentation(entry: entry);
@@ -398,7 +407,7 @@ class const _PregoPopupAlertOverlay({
   required final bool showCloseButton,
   required final VoidCallback onDismissed,
   required final _PregoPopupAlertPresentation presentation,
-  required final double topInset,
+  required final PregoTopBarGeometry topBar,
 }) extends StatefulWidget {
   @override
   State<_PregoPopupAlertOverlay> createState() => _PregoPopupAlertOverlayState();
@@ -473,37 +482,32 @@ class _PregoPopupAlertOverlayState()
   @override
   Widget build(BuildContext context) {
     final reducedMotion = prefersReducedMotion(context);
-    return PositionedDirectional(
-      top: widget.topInset + PregoSpacing.xl,
-      start: PregoSpacing.xl,
-      end: PregoSpacing.xl,
-      child: SafeArea(
-        top: false,
-        bottom: false,
-        child: Center(
-          child: FadeTransition(
-            opacity: _controller,
-            child: SlideTransition(
-              position: reducedMotion ? const AlwaysStoppedAnimation(Offset.zero) : _position,
-              child: ScaleTransition(
-                scale: reducedMotion ? const AlwaysStoppedAnimation(1) : _scale,
-                alignment: Alignment.topCenter,
-                child: Dismissible(
-                  key: const ValueKey("prego_popup_alert"),
-                  direction: DismissDirection.up,
-                  resizeDuration: null,
-                  onDismissed: (_) => _dismissBySwipe(),
-                  child: RepaintBoundary(
-                    child: Semantics(
-                      liveRegion: true,
-                      child: PregoPopupAlertsNotifications(
-                        title: widget.title,
-                        message: widget.message,
-                        variant: widget.variant,
-                        primaryAction: widget.primaryAction,
-                        secondaryAction: widget.secondaryAction,
-                        onClose: widget.showCloseButton ? _dismiss : null,
-                      ),
+    final alert = SafeArea(
+      top: false,
+      bottom: false,
+      child: Center(
+        child: FadeTransition(
+          opacity: _controller,
+          child: SlideTransition(
+            position: reducedMotion ? const AlwaysStoppedAnimation(Offset.zero) : _position,
+            child: ScaleTransition(
+              scale: reducedMotion ? const AlwaysStoppedAnimation(1) : _scale,
+              alignment: Alignment.topCenter,
+              child: Dismissible(
+                key: const ValueKey("prego_popup_alert"),
+                direction: DismissDirection.up,
+                resizeDuration: null,
+                onDismissed: (_) => _dismissBySwipe(),
+                child: RepaintBoundary(
+                  child: Semantics(
+                    liveRegion: true,
+                    child: PregoPopupAlertsNotifications(
+                      title: widget.title,
+                      message: widget.message,
+                      variant: widget.variant,
+                      primaryAction: widget.primaryAction,
+                      secondaryAction: widget.secondaryAction,
+                      onClose: widget.showCloseButton ? _dismiss : null,
                     ),
                   ),
                 ),
@@ -511,6 +515,17 @@ class _PregoPopupAlertOverlayState()
             ),
           ),
         ),
+      ),
+    );
+    // Follows the banner as it animates in or out while the alert is showing,
+    // so a banner that appears after presentation never slides under the card.
+    return ValueListenableBuilder<double>(
+      valueListenable: widget.topBar.bannerHeight,
+      builder: (context, bannerHeight, _) => PositionedDirectional(
+        top: widget.topBar.baseInset + bannerHeight + PregoSpacing.xl,
+        start: PregoSpacing.xl,
+        end: PregoSpacing.xl,
+        child: alert,
       ),
     );
   }
