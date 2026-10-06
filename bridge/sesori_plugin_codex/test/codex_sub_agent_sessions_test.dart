@@ -6,6 +6,7 @@ import "package:codex_plugin/src/api/models/codex_rollout_dto.dart";
 import "package:codex_plugin/src/codex_app_server_client.dart";
 import "package:codex_plugin/src/codex_config_reader.dart";
 import "package:codex_plugin/src/codex_metadata_repository.dart";
+import "package:codex_plugin/src/repositories/codex_authentication_repository.dart";
 import "package:codex_plugin/src/repositories/codex_catalog_repository.dart";
 import "package:codex_plugin/src/repositories/codex_message_repository.dart";
 import "package:codex_plugin/src/repositories/codex_model_repository.dart";
@@ -757,6 +758,7 @@ CodexSessionService _newService({
 }) {
   final rolloutApi = CodexRolloutApi(environment: const {});
   final service = CodexSessionService(
+    apiKeyConfigured: false,
     catalogRepository: catalogRepository ?? CodexCatalogRepository(rolloutApi: rolloutApi),
     messageRepository: CodexMessageRepository(
       rolloutApi: rolloutApi,
@@ -773,6 +775,10 @@ CodexSessionService _newService({
     client: CodexAppServerClient(serverUrl: "ws://127.0.0.1:0", channelFactory: null, onDisconnected: null),
   );
   service.attachAppServerRepositories(
+    authenticationRepository: CodexAuthenticationRepository(
+      appServerApi: api,
+      requestTimeout: const Duration(seconds: 30),
+    ),
     threadRepository: threadRepository,
     modelRepository: CodexModelRepository(appServerApi: api),
     skillRepository: CodexSkillRepository(appServerApi: api),

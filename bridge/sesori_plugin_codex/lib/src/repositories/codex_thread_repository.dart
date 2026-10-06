@@ -92,10 +92,15 @@ class CodexThreadRepository({required final CodexAppServerApi _appServerApi}) {
   Future<CodexResumedThread> resumeThread({
     required String threadId,
     required String developerInstructions,
+    required String? modelProvider,
   }) async {
     final dto = await _request(
       operation: "thread/resume",
-      request: () => _appServerApi.resumeThread(threadId: threadId, developerInstructions: developerInstructions),
+      request: () => _appServerApi.resumeThread(
+        threadId: threadId,
+        developerInstructions: developerInstructions,
+        modelProvider: modelProvider,
+      ),
     );
     return CodexResumedThread(
       thread: _mapRequired(dto: dto, operation: "thread/resume"),
@@ -187,7 +192,7 @@ class CodexThreadRepository({required final CodexAppServerApi _appServerApi}) {
       createdAt: _milliseconds(seconds: thread.createdAt),
       updatedAt: _milliseconds(seconds: thread.updatedAt),
       model: _usefulText(value: dto.model),
-      modelProvider: _usefulText(value: thread.modelProvider) ?? _usefulText(value: dto.modelProvider),
+      modelProvider: _usefulText(value: dto.modelProvider) ?? _usefulText(value: thread.modelProvider),
       parentId: _subAgentParentId(thread: thread),
       agentNickname: _usefulText(value: thread.agentNickname),
       agentPath: null,

@@ -8,8 +8,10 @@ import "package:codex_plugin/src/api/models/codex_tool_outcome_dto.dart";
 import "package:codex_plugin/src/codex_app_server_client.dart";
 import "package:codex_plugin/src/codex_config_reader.dart";
 import "package:codex_plugin/src/codex_metadata_repository.dart";
+import "package:codex_plugin/src/models/codex_authentication_mode.dart";
 import "package:codex_plugin/src/models/codex_collaboration_mode.dart";
 import "package:codex_plugin/src/models/codex_replay_tool_disposition.dart";
+import "package:codex_plugin/src/repositories/codex_authentication_repository.dart";
 import "package:codex_plugin/src/repositories/codex_catalog_repository.dart";
 import "package:codex_plugin/src/repositories/codex_message_repository.dart";
 import "package:codex_plugin/src/repositories/codex_model_repository.dart";
@@ -34,20 +36,22 @@ void main() {
     final service = _newService();
     final firstRepository = _StubThreadRepository();
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: firstRepository,
       modelRepository: _StubModelRepository(),
       skillRepository: _StubSkillRepository(),
     );
-    await service.resumeThreadIfNeeded(threadId: "thread-id", force: false);
+    await service.resumeThreadIfNeeded(threadId: "thread-id", modelProvider: null, force: false);
 
     service.detachAppServerRepositories();
     final secondRepository = _StubThreadRepository();
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: secondRepository,
       modelRepository: _StubModelRepository(),
       skillRepository: _StubSkillRepository(),
     );
-    await service.resumeThreadIfNeeded(threadId: "thread-id", force: false);
+    await service.resumeThreadIfNeeded(threadId: "thread-id", modelProvider: null, force: false);
 
     expect(firstRepository.resumeCount, 1);
     expect(secondRepository.resumeCount, 1);
@@ -66,6 +70,7 @@ void main() {
       ],
     );
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: threadRepository,
       modelRepository: _StubModelRepository(),
       skillRepository: skillRepository,
@@ -88,6 +93,7 @@ void main() {
   test("getCommands still exposes compact when skill discovery fails", () async {
     final service = _newService();
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: _StubThreadRepository(),
       modelRepository: _StubModelRepository(),
       skillRepository: _StubSkillRepository(error: StateError("skills unavailable")),
@@ -102,6 +108,7 @@ void main() {
     final service = _newService();
     final threadRepository = _StubThreadRepository();
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: threadRepository,
       modelRepository: _StubModelRepository(),
       skillRepository: _StubSkillRepository(),
@@ -113,6 +120,7 @@ void main() {
       arguments: "staged changes",
       clientUserMessageId: "prm_1",
       model: "gpt-5.6",
+      modelProvider: null,
       effort: "high",
       collaborationMode: CodexCollaborationMode.plan,
       fastMode: true,
@@ -132,6 +140,7 @@ void main() {
       arguments: "",
       clientUserMessageId: "prm_2",
       model: null,
+      modelProvider: null,
       effort: null,
       collaborationMode: null,
       fastMode: false,
@@ -160,6 +169,7 @@ void main() {
     );
     final threadRepository = _StubThreadRepository();
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: threadRepository,
       modelRepository: _StubModelRepository(),
       skillRepository: _StubSkillRepository(),
@@ -167,6 +177,7 @@ void main() {
 
     await service.sendCommand(
       threadId: threadId,
+      modelProvider: null,
       command: "review",
       arguments: "",
       clientUserMessageId: null,
@@ -214,6 +225,7 @@ void main() {
       ),
     );
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: _StubThreadRepository(),
       modelRepository: modelRepository,
       skillRepository: _StubSkillRepository(
@@ -238,14 +250,11 @@ void main() {
       options.agents.map((agent) => agent.model?.modelID),
       everyElement("gpt-project"),
     );
-    final provider = options.providers.providers.single;
+    final provider = options.providers.providers.singleWhere((provider) => provider.id == "azure");
     expect(provider.id, "azure");
     expect(provider.name, "Azure OpenAI");
     expect(provider.defaultModelID, "gpt-project");
-    expect(provider.models.map((model) => model.id), [
-      "gpt-default",
-      "gpt-project",
-    ]);
+    expect(provider.models.map((model) => model.id), ["gpt-project"]);
     expect(options.commands.map((command) => command.name), [
       "review",
       "compact",
@@ -262,6 +271,7 @@ void main() {
       ),
     );
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: _StubThreadRepository(),
       modelRepository: _StubModelRepository(
         error: StateError("models unavailable"),
@@ -271,10 +281,12 @@ void main() {
 
     final providers = await service.getProviders(projectId: "/repo");
 
-    final provider = providers.providers.single;
+    final provider = providers.providers.singleWhere((provider) => provider.id == "openai");
     expect(provider.defaultModelID, "configured-model");
     expect(provider.models.single.id, "configured-model");
-    expect(provider.models.single.name, "configured-model");
+    final apiProvider = providers.providers.singleWhere((provider) => provider.id == "sesori-openai-api");
+    expect(apiProvider.defaultModelID, isNull);
+    expect(apiProvider.models, isEmpty);
   });
 
   test("aggregate marks model fallback partial and still lists models exactly once", () async {
@@ -288,6 +300,7 @@ void main() {
     );
     final modelRepository = _StubModelRepository(error: StateError("models unavailable"));
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: _StubThreadRepository(),
       modelRepository: modelRepository,
       skillRepository: _StubSkillRepository(),
@@ -298,13 +311,17 @@ void main() {
     expect(modelRepository.listCount, 1);
     final options = (result as PluginSessionOptionsDiscoveryObserved).options;
     expect(options.completeness, PluginSessionOptionsCompleteness.partial);
-    expect(options.providers.providers.single.defaultModelID, "configured-model");
+    expect(
+      options.providers.providers.singleWhere((provider) => provider.id == "openai").defaultModelID,
+      "configured-model",
+    );
     expect(options.commands.single.name, "compact");
   });
 
   test("aggregate marks the deliberate skill fallback partial", () async {
     final service = _newService();
     service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
       threadRepository: _StubThreadRepository(),
       modelRepository: _StubModelRepository(),
       skillRepository: _StubSkillRepository(error: StateError("skills unavailable")),
@@ -473,6 +490,7 @@ CodexSessionService _newService({
 }) {
   final rolloutApi = CodexRolloutApi(environment: const {});
   return CodexSessionService(
+    apiKeyConfigured: false,
     catalogRepository: catalogRepository ?? CodexCatalogRepository(rolloutApi: rolloutApi),
     messageRepository:
         messageRepository ??
@@ -629,6 +647,19 @@ class _StubSkillRepository({var List<PluginCommand> commands = const [], final O
   }
 }
 
+class _StubAuthenticationRepository() extends CodexAuthenticationRepository {
+  this
+    : super(
+        appServerApi: CodexAppServerApi(
+          client: CodexAppServerClient(serverUrl: "ws://127.0.0.1:0", channelFactory: null, onDisconnected: null),
+        ),
+        requestTimeout: const Duration(seconds: 30),
+      );
+
+  @override
+  Future<CodexAuthenticationMode?> readMode() async => CodexAuthenticationMode.chatgptSubscription;
+}
+
 class _StubThreadRepository() extends CodexThreadRepository {
   this
     : super(
@@ -649,21 +680,28 @@ class _StubThreadRepository() extends CodexThreadRepository {
   Future<String?> readDeveloperInstructions({required String? cwd}) async => null;
 
   @override
-  Future<CodexResumedThread> resumeThread({required String threadId, required String developerInstructions}) async {
+  Future<CodexThreadRecord> readThread({required String threadId}) async => CodexThreadRecord(
+    id: threadId,
+    name: null,
+    directory: "/repo",
+    createdAt: null,
+    updatedAt: null,
+    model: null,
+    modelProvider: "openai",
+    parentId: null,
+    agentNickname: null,
+    agentPath: null,
+  );
+
+  @override
+  Future<CodexResumedThread> resumeThread({
+    required String threadId,
+    required String developerInstructions,
+    required String? modelProvider,
+  }) async {
     resumeCount += 1;
     return CodexResumedThread(
-      thread: CodexThreadRecord(
-        id: threadId,
-        name: null,
-        directory: "/repo",
-        createdAt: null,
-        updatedAt: null,
-        model: null,
-        modelProvider: null,
-        parentId: null,
-        agentNickname: null,
-        agentPath: null,
-      ),
+      thread: await readThread(threadId: threadId),
       runningTurnId: null,
     );
   }
