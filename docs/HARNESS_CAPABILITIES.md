@@ -520,11 +520,14 @@ question card is shown; secret prompts are never downgraded to plain text.
 retain a short billing suffix after selection. Subscription requires a
 ChatGPT Codex login; API requires `OPENAI_API_KEY` in the bridge process
 environment and uses the official OpenAI Responses endpoint. An environment
-key makes API setup ready without a ChatGPT login. Missing or incompatible
-credentials fail before generation; neither route falls back to the other.
-Keys stay on the host and never enter the client catalog, process arguments,
-ownership records, or session history. Normal configured custom providers
-remain separate and keep their configured model/default.
+key makes API setup ready without a ChatGPT login. Missing keys, incompatible
+account kinds and malformed subscription account responses fail before generation.
+API-key validity and authorization are checked by OpenAI, not inferred from a
+local format check. Invalid or revoked keys surface an API authentication failure;
+neither route falls back to the other. Keys stay on the host and never enter
+the client catalog, process arguments, ownership records, or session history.
+Normal configured custom providers remain separate and keep their configured
+model/default.
 
 **Not supported by this selector:** Changing the provider of an existing
 Codex conversation. A different-provider prompt or command is rejected with

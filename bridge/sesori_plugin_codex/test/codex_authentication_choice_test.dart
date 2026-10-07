@@ -117,6 +117,28 @@ void main() {
     });
   }
 
+  for (final (index, response) in <Object>[
+    "invalid response",
+    <Object>[],
+    {"account": "invalid account"},
+    {
+      "account": {"type": 123},
+    },
+  ].indexed) {
+    test("subscription rejects malformed account response $index before generation", () async {
+      server.accountResponse = response;
+      configure(apiKeyConfigured: true);
+
+      await expectLater(
+        create(provider: "openai"),
+        throwsA(anyOf(isA<StateError>(), isA<TypeError>(), isA<ArgumentError>())),
+      );
+      expect(server.calls.map((call) => call.method), isNot(contains("thread/start")));
+      expect(server.generationAttempts, isEmpty);
+      expect(server.provider, "openai");
+    });
+  }
+
   test("missing standard environment key rejects API without falling back to subscription", () async {
     server.accountType = "apiKey";
     configure(apiKeyConfigured: false);
@@ -295,6 +317,7 @@ class _RoutingAppServer({required final HttpServer _http}) {
   final List<_Generation> generationAttempts = [];
   final List<_Generation> generations = [];
   String? accountType = "chatgpt";
+  Object? accountResponse;
   String provider = "openai";
   bool failNextGeneration = false;
   int _turn = 0;
@@ -324,10 +347,12 @@ class _RoutingAppServer({required final HttpServer _http}) {
       case "initialize":
         result = {"userAgent": "codex-fixture"};
       case "account/read":
-        result = {
-          "account": accountType == null ? null : {"type": accountType, "email": "dummy@example.invalid"},
-          "requiresOpenaiAuth": true,
-        };
+        result =
+            accountResponse ??
+            {
+              "account": accountType == null ? null : {"type": accountType, "email": "dummy@example.invalid"},
+              "requiresOpenaiAuth": true,
+            };
       case "thread/start":
         provider = params["modelProvider"] as String? ?? provider;
         result = _threadResult;
