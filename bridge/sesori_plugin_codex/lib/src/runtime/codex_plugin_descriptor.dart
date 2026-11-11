@@ -8,6 +8,7 @@ import "package:sesori_plugin_runtime/sesori_plugin_runtime.dart";
 import "package:sesori_shared/sesori_shared.dart" show Harness;
 
 import "../api/codex_app_server_api.dart";
+import "../api/codex_open_ai_model_api.dart";
 import "../api/codex_rollout_api.dart";
 import "../api/codex_tool_outcome_storage.dart";
 import "../api/parsers/codex_command_execution_parser.dart";
@@ -73,6 +74,10 @@ CodexPlugin buildCodexPlugin({
   return CodexPlugin.composed(
     serverUrl: serverUrl,
     clientFactory: clientFactory,
+    openAiModelApi: CodexOpenAiModelApi(
+      apiKey: environment["OPENAI_API_KEY"],
+      requestTimeout: const Duration(seconds: 10),
+    ),
     sessionService: CodexSessionService(
       catalogRepository: catalogRepository,
       messageRepository: messageRepository,

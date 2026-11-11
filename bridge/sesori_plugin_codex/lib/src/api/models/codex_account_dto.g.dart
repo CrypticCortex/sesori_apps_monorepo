@@ -7,19 +7,7 @@ part of 'codex_account_dto.dart';
 // **************************************************************************
 
 _CodexAccountKindDto _$CodexAccountKindDtoFromJson(Map json) =>
-    _CodexAccountKindDto(
-      type: $enumDecode(
-        _$CodexAccountKindEnumMap,
-        json['type'],
-        unknownValue: CodexAccountKind.unknown,
-      ),
-    );
-
-const _$CodexAccountKindEnumMap = {
-  CodexAccountKind.chatgpt: 'chatgpt',
-  CodexAccountKind.apiKey: 'apiKey',
-  CodexAccountKind.unknown: 'unknown',
-};
+    _CodexAccountKindDto(type: _accountKindFromJson(json['type'] as String));
 
 _CodexAccountReadResponseDto _$CodexAccountReadResponseDtoFromJson(Map json) =>
     _CodexAccountReadResponseDto(
@@ -28,6 +16,7 @@ _CodexAccountReadResponseDto _$CodexAccountReadResponseDtoFromJson(Map json) =>
           : CodexAccountKindDto.fromJson(
               Map<String, dynamic>.from(json['account'] as Map),
             ),
+      requiresOpenaiAuth: json['requiresOpenaiAuth'] as bool?,
     );
 
 Map<String, dynamic> _$CodexDeviceLoginStartParamsDtoToJson(

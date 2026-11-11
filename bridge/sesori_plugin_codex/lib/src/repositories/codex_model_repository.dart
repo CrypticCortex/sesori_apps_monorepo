@@ -1,6 +1,7 @@
 import "package:sesori_plugin_interface/sesori_plugin_interface.dart";
 
 import "../api/codex_app_server_api.dart";
+import "../api/codex_open_ai_model_api.dart";
 import "../api/models/codex_model_dto.dart";
 import "../models/codex_service_tier.dart";
 
@@ -11,7 +12,27 @@ typedef CodexModelCatalog = ({
 
 /// Maps Codex's app-server model catalog into selectable plugin models,
 /// listed strongest first through [CatalogStrengthOrder].
-class CodexModelRepository({required final CodexAppServerApi _appServerApi}) {
+class CodexModelRepository({
+  required final CodexAppServerApi _appServerApi,
+  required final CodexOpenAiModelApi _openAiModelApi,
+}) {
+  /// OpenAI's catalog alone includes models Codex cannot drive. Intersect it
+  /// with Codex's supported models instead of assuming ChatGPT entitlements.
+  Future<CodexModelCatalog> listApiModels({required CodexModelCatalog nativeCatalog}) async {
+    if (!_openAiModelApi.isConfigured) return (defaultModelID: null, models: const <PluginModel>[]);
+    final ids = {for (final model in (await _openAiModelApi.listModels()).data) model.id};
+    final models = [
+      for (final model in nativeCatalog.models)
+        if (ids.contains(model.id)) model.copyWith(fastMode: null),
+    ];
+    return (
+      defaultModelID: ids.contains(nativeCatalog.defaultModelID)
+          ? nativeCatalog.defaultModelID
+          : models.firstOrNull?.id,
+      models: models,
+    );
+  }
+
   Future<CodexModelCatalog> listModels() async {
     final response = await _appServerApi.listModels();
     String? defaultModelID;

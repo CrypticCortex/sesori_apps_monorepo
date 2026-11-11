@@ -1,4 +1,5 @@
 import "package:codex_plugin/src/api/codex_app_server_api.dart";
+import "package:codex_plugin/src/api/codex_open_ai_model_api.dart";
 import "package:codex_plugin/src/api/models/codex_model_dto.dart";
 import "package:codex_plugin/src/codex_app_server_client.dart";
 import "package:codex_plugin/src/repositories/codex_model_repository.dart";
@@ -135,6 +136,7 @@ void main() {
   group("CodexModelRepository", () {
     test("filters hidden models and falls back to the id for a blank display name", () async {
       final repository = CodexModelRepository(
+        openAiModelApi: CodexOpenAiModelApi(apiKey: null, requestTimeout: const Duration(seconds: 1)),
         appServerApi: _StubAppServerApi(
           response: const CodexModelListResponseDto(
             data: [
@@ -181,6 +183,7 @@ void main() {
 
     test("lists reasoning efforts strongest first, declares the default, and removes duplicates", () async {
       final repository = CodexModelRepository(
+        openAiModelApi: CodexOpenAiModelApi(apiKey: null, requestTimeout: const Duration(seconds: 1)),
         appServerApi: _StubAppServerApi(
           response: const CodexModelListResponseDto(
             data: [
@@ -224,6 +227,7 @@ void main() {
 
     test("declares fast-mode support only for a model offering the priority service tier", () async {
       final repository = CodexModelRepository(
+        openAiModelApi: CodexOpenAiModelApi(apiKey: null, requestTimeout: const Duration(seconds: 1)),
         appServerApi: _StubAppServerApi(
           response: const CodexModelListResponseDto(
             data: [
@@ -285,6 +289,7 @@ void main() {
         serviceTiers: const [],
       );
       final repository = CodexModelRepository(
+        openAiModelApi: CodexOpenAiModelApi(apiKey: null, requestTimeout: const Duration(seconds: 1)),
         appServerApi: _StubAppServerApi(
           response: CodexModelListResponseDto(
             data: [

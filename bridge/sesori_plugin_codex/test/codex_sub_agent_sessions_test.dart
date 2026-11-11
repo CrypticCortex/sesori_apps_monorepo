@@ -1,6 +1,7 @@
 import "dart:async";
 
 import "package:codex_plugin/src/api/codex_app_server_api.dart";
+import "package:codex_plugin/src/api/codex_open_ai_model_api.dart";
 import "package:codex_plugin/src/api/codex_rollout_api.dart";
 import "package:codex_plugin/src/api/models/codex_rollout_dto.dart";
 import "package:codex_plugin/src/codex_app_server_client.dart";
@@ -780,7 +781,10 @@ CodexSessionService _newService({
       requestTimeout: const Duration(seconds: 30),
     ),
     threadRepository: threadRepository,
-    modelRepository: CodexModelRepository(appServerApi: api),
+    modelRepository: CodexModelRepository(
+      appServerApi: api,
+      openAiModelApi: CodexOpenAiModelApi(apiKey: null, requestTimeout: const Duration(seconds: 1)),
+    ),
     skillRepository: CodexSkillRepository(appServerApi: api),
   );
   return service;

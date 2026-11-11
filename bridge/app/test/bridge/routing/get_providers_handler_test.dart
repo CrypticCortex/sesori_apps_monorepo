@@ -73,10 +73,11 @@ void main() {
 
     // ── Data transformation ─────────────────────────────────────────────────
 
-    test("maps provider id and name fields", () async {
+    test("maps provider identity and fixed-session capability through JSON", () async {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: true,
             id: "anthropic",
             name: "Anthropic",
             authType: PluginProviderAuthType.apiKey,
@@ -95,12 +96,14 @@ void main() {
       expect(response.items, hasLength(1));
       expect(provider.id, equals("anthropic"));
       expect(provider.name, equals("Anthropic"));
+      expect(ProviderInfo.fromJson(provider.toJson()).isSessionFixed, isTrue);
     });
 
     test("maps defaultModelID when present", () async {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "openai",
             name: "OpenAI",
             authType: PluginProviderAuthType.apiKey,
@@ -123,6 +126,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "google",
             name: "Google",
             authType: PluginProviderAuthType.apiKey,
@@ -145,6 +149,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "anthropic",
             name: "Anthropic",
             authType: PluginProviderAuthType.apiKey,
@@ -182,6 +187,7 @@ void main() {
       plugin.providersResult = PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "openai",
             name: "OpenAI",
             authType: PluginProviderAuthType.apiKey,
@@ -235,6 +241,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "openai",
             name: "OpenAI",
             authType: PluginProviderAuthType.apiKey,
@@ -267,6 +274,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "anthropic",
             name: "Anthropic",
             authType: PluginProviderAuthType.apiKey,
@@ -293,6 +301,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "openai",
             name: "OpenAI",
             authType: PluginProviderAuthType.apiKey,
@@ -323,6 +332,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "empty-provider",
             name: "Empty Provider",
             authType: PluginProviderAuthType.unknown,
@@ -344,6 +354,7 @@ void main() {
       plugin.providersResult = const PluginProvidersResult(
         providers: [
           PluginProvider(
+            isSessionFixed: false,
             id: "anthropic",
             name: "Anthropic",
             authType: PluginProviderAuthType.apiKey,
@@ -351,6 +362,7 @@ void main() {
             defaultModelID: null,
           ),
           PluginProvider(
+            isSessionFixed: false,
             id: "openai",
             name: "OpenAI",
             authType: PluginProviderAuthType.apiKey,
@@ -358,6 +370,7 @@ void main() {
             defaultModelID: null,
           ),
           PluginProvider(
+            isSessionFixed: false,
             id: "google",
             name: "Google",
             authType: PluginProviderAuthType.apiKey,

@@ -245,6 +245,7 @@ void main() {
               builder: (context, setState) => Align(
                 alignment: Alignment.bottomCenter,
                 child: AgentModelButtons(
+                  readOnly: false,
                   surfaceStyle: PregoComposerSurfaceStyle.subtle,
                   agents: const [],
                   selectedAgent: null,

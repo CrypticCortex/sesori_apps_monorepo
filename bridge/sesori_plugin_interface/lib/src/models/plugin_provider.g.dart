@@ -42,6 +42,7 @@ const _$PluginFastModeUnavailableReasonEnumMap = {
 
 Map<String, dynamic> _$PluginProviderToJson(_PluginProvider instance) =>
     <String, dynamic>{
+      'isSessionFixed': instance.isSessionFixed,
       'id': instance.id,
       'name': instance.name,
       'authType': _$PluginProviderAuthTypeEnumMap[instance.authType]!,

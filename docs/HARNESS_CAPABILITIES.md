@@ -637,32 +637,61 @@ question card is shown; secret prompts are never downgraded to plain text.
 
 ## Codex session billing choice
 
-**Implemented:** New Codex sessions offer **ChatGPT subscription** and
-**OpenAI API** as separate groups in the existing model picker. Model labels
-retain a short billing suffix after selection. Subscription requires a
-ChatGPT Codex login; API requires `OPENAI_API_KEY` in the bridge process
-environment and uses the official OpenAI Responses endpoint. An environment
-key makes API setup ready without a ChatGPT login. Missing keys, incompatible
-account kinds and malformed subscription account responses fail before generation.
-API-key validity and authorization are checked by OpenAI, not inferred from a
-local format check. Invalid or revoked keys surface an API authentication failure;
-neither route falls back to the other. Keys stay on the host and never enter
-the client catalog, process arguments, ownership records, or session history.
-Normal configured custom providers remain separate and keep their configured
-model/default.
+**Implemented:** New Codex sessions separate the existing **Codex login** route
+(`openai`) from **OpenAI API** (`sesori-openai-api`) in the model picker. The
+native route is labeled **ChatGPT subscription** for a ChatGPT account and
+**OpenAI API (Codex login)** for a native API-key account; future account kinds
+remain usable with the neutral label. Selected models retain a billing suffix.
+Only a genuinely missing required account or a malformed account response blocks
+native creation/resume. A no-auth custom server default can suppress account
+discovery, so that response is left for Codex to validate. Loaded sessions do not
+repeat the account check for every prompt or compaction; discovery and actual
+resume use the configured request timeout.
+
+The separate API route requires `OPENAI_API_KEY` in the **bridge process**
+environment and uses the official OpenAI Responses endpoint. Its catalog is the
+intersection of Codex-supported models and the models returned by OpenAI's
+`GET /v1/models` for that key, with a bounded request and no inherited native fast
+tier. Missing credentials disable native models or omit API models before
+selection; API discovery failures leave the native route usable. API-only setup
+defaults to the available API route. Discovery cannot guarantee generation
+quota or access that changes afterward: those errors remain on the chosen route,
+with no cross-route retry. Keys never enter the client catalog, process arguments,
+ownership records, or history. Configured custom providers keep their process
+default and model; startup does not override `model_provider`. Project defaults
+use the most recently updated matching session.
+
+Shell exports apply only to child processes. A desktop/macOS bridge launched by
+the app or a service may not inherit a terminal's environment: configure the
+environment of the process that launches the bridge, then restart it. The API
+provider is registered through the bridge's app-server arguments. To resume its
+sessions using plain `codex resume`, also add this matching block to the CLI's
+`config.toml` and provide `OPENAI_API_KEY` to that CLI process:
+
+```toml
+[model_providers.sesori-openai-api]
+name = "OpenAI API"
+base_url = "https://api.openai.com/v1"
+wire_api = "responses"
+env_key = "OPENAI_API_KEY"
+requires_openai_auth = false
+```
 
 **Not supported by this selector:** Changing the provider of an existing
-Codex conversation. A different-provider prompt or command is rejected with
+Codex conversation. Its picker offers only models for the recorded provider.
+A different-provider prompt or command is rejected with
 guidance to start a new session; omission, reload and retry retain the recorded
 provider rather than selecting the bridge's current default. A native
 codex-cli 0.159.2 probe confirmed that `thread/resume` ignores a different
 provider for an already-loaded thread. This does not change any other harness.
 
-**Verification:** API generation and rejection of an existing-session billing
-change were exercised through the real Sesori plugin and native app-server on
-Linux. Positive ChatGPT admission and missing/API-only account rejection have
-deterministic regression coverage; a real ChatGPT subscription generation was
-not exercised. The standard model picker was exercised with fixture data.
+**Verification:** The original implementation exercised API generation and
+existing-session billing-change rejection through the real plugin and native
+app-server on Linux (codex-cli 0.159.2). The review revision adds deterministic
+coverage for ChatGPT, native API-key and future accounts, missing/malformed
+accounts, catalog authorization/timeout failures, API-only defaults, loaded
+session reuse, recency and the fixed-provider picker. It does not claim a fresh
+paid generation or real ChatGPT generation. UI checks use fixture data.
 
 ## Setup detection
 

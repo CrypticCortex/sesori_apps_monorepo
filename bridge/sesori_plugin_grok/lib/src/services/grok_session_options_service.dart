@@ -236,6 +236,7 @@ class GrokSessionOptionsService({
             ? const []
             : [
                 PluginProvider(
+                  isSessionFixed: false,
                   id: _pluginId,
                   name: _displayName,
                   authType: PluginProviderAuthType.unknown,

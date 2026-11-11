@@ -38,6 +38,29 @@ AgentInfo _agent({
 }) => AgentInfo(name: name, description: name, model: model, mode: mode, hidden: hidden);
 
 void main() {
+  test("fixed sessions disable other routes while preserving same-provider models", () {
+    final providers = [
+      for (final id in ["first", "second"])
+        _provider(
+          id: id,
+          models: {"model": _model(id: "model", providerID: id)},
+        ).copyWith(isSessionFixed: true),
+    ];
+    final fixed = _calculator.providersForSession(providers: providers, recordedProviderID: "second");
+    expect(fixed.first.models.values.single.isAvailable, isFalse);
+    expect(fixed.last.models.values.single.isAvailable, isTrue);
+    expect(providers.first.models.values.single.isAvailable, isTrue);
+    final unknown = _calculator.providersForSession(providers: providers, recordedProviderID: null);
+    expect(unknown.every((provider) => provider.models.values.every((model) => !model.isAvailable)), isTrue);
+  });
+
+  test("providers from older bridges keep their existing switching behavior", () {
+    final provider = ProviderInfo.fromJson({"id": "fixture", "name": "Fixture", "models": <String, dynamic>{}});
+    expect(provider.isSessionFixed, isFalse);
+    final providers = [provider];
+    expect(_calculator.providersForSession(providers: providers, recordedProviderID: "other"), same(providers));
+  });
+
   group("SessionSelectionCalculator fast mode", () {
     final providers = [
       _provider(

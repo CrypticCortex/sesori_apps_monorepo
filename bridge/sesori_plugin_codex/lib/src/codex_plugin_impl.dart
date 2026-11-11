@@ -8,6 +8,7 @@ import "package:sesori_shared/sesori_shared.dart" show Harness;
 
 import "api/codex_app_server_api.dart";
 import "api/codex_mcp_callback_api.dart";
+import "api/codex_open_ai_model_api.dart";
 import "api/models/codex_correlatable_item_event_dto.dart";
 import "api/models/codex_image_bearing_item_dto.dart";
 import "api/models/codex_pending_input.dart";
@@ -61,6 +62,7 @@ class CodexPlugin._({
   required final String _serverUrl,
   required final CodexAppServerClient Function()? _clientFactory,
   required final CodexSessionService _sessionService,
+  required final CodexOpenAiModelApi _openAiModelApi,
   required final CodexMessageRepository _messageRepository,
   required final CodexEventMapper _eventMapper,
   required final CodexRolloutTailer _rolloutTailer,
@@ -179,6 +181,7 @@ class CodexPlugin._({
     required String serverUrl,
     required CodexAppServerClient Function()? clientFactory,
     required CodexSessionService sessionService,
+    required CodexOpenAiModelApi openAiModelApi,
     required CodexMessageRepository messageRepository,
     required CodexEventMapper eventMapper,
     required CodexRolloutTailer rolloutTailer,
@@ -197,6 +200,7 @@ class CodexPlugin._({
          serverUrl: serverUrl,
          clientFactory: clientFactory,
          sessionService: sessionService,
+         openAiModelApi: openAiModelApi,
          messageRepository: messageRepository,
          eventMapper: eventMapper,
          rolloutTailer: rolloutTailer,
@@ -323,7 +327,7 @@ class CodexPlugin._({
             requestTimeout: const Duration(seconds: 30),
           ),
           threadRepository: CodexThreadRepository(appServerApi: appServerApi),
-          modelRepository: CodexModelRepository(appServerApi: appServerApi),
+          modelRepository: CodexModelRepository(appServerApi: appServerApi, openAiModelApi: _openAiModelApi),
           skillRepository: CodexSkillRepository(appServerApi: appServerApi),
         );
         _subscribeToNotifications(client: client);
@@ -1032,6 +1036,7 @@ class CodexPlugin._({
       fastMode: fastMode,
     );
     _eventMapper.setThreadTime(record: thread);
+    _eventMapper.setThreadProvider(threadId: thread.id, provider: thread.modelProvider);
     final threadId = thread.id;
     _recordAuthoritativeThreadCreation(threadId: threadId);
     // codex's ThreadStartResponse carries the resolved model alongside the
@@ -1536,6 +1541,7 @@ class CodexPlugin._({
       status: _sessionStatuses[threadId] ?? const PluginSessionStatus.idle(),
     );
     _eventMapper.setThreadTime(record: thread);
+    _eventMapper.setThreadProvider(threadId: thread.id, provider: thread.modelProvider);
     _eventMapper.setThreadModel(threadId: threadId, model: thread.model);
     _eventMapper.setThreadProvider(threadId: threadId, provider: thread.modelProvider);
     _eventMapper.setThreadParent(threadId: threadId, parentId: thread.parentId);

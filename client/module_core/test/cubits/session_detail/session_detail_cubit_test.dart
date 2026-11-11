@@ -284,6 +284,103 @@ void main() {
       );
     });
 
+    for (final hasTranscript in [true, false]) {
+      test("fixed provider cannot be changed after loading (transcript: $hasTranscript)", () async {
+        final original = testProviderListResponse().items.first;
+        final other = original.copyWith(
+          id: "other-route",
+          name: "Other billing route",
+          isSessionFixed: true,
+          models: {
+            for (final entry in original.models.entries) entry.key: entry.value.copyWith(providerID: "other-route"),
+          },
+        );
+        when(
+          () => mockSessionApi.listProviders(
+            projectId: any(named: "projectId"),
+            pluginId: any(named: "pluginId"),
+          ),
+        ).thenAnswer(
+          (_) async => ApiResponse.success(
+            ProviderListResponse(
+              connectedOnly: false,
+              items: [original.copyWith(isSessionFixed: true), other],
+            ),
+          ),
+        );
+        if (hasTranscript) {
+          when(
+            () => mockSourceRepository.getMessages(
+              sessionId: any(named: "sessionId"),
+              limit: any(named: "limit"),
+              before: any(named: "before"),
+              storedOnly: any(named: "storedOnly"),
+            ),
+          ).thenAnswer(
+            (_) async => ApiResponse.success(
+              MessageWithPartsResponse(
+                messages: [
+                  testMessageWithParts().copyWith(
+                    info: Message.assistant(
+                      id: "msg-1",
+                      sessionID: sessionId,
+                      agent: null,
+                      modelID: original.models.keys.first,
+                      providerID: original.id,
+                      sender: MessageSender.agent,
+                      time: null,
+                    ),
+                  ),
+                ],
+                nextCursor: null,
+                userMessagesBefore: null,
+                replayedPromptDefaults: null,
+                cannotContinueMessage: null,
+              ),
+            ),
+          );
+        } else {
+          stubSessionRepositoryGetSession(
+            repository: mockSessionRepository,
+            sessionId: sessionId,
+            session: testSession(
+              id: sessionId,
+              promptDefaults: SessionPromptDefaults(
+                agent: null,
+                model: AgentModel(providerID: original.id, modelID: original.models.keys.first, variant: null),
+              ),
+            ),
+          );
+          when(
+            () => mockSourceRepository.getMessages(
+              sessionId: any(named: "sessionId"),
+              limit: any(named: "limit"),
+              before: any(named: "before"),
+              storedOnly: any(named: "storedOnly"),
+            ),
+          ).thenAnswer(
+            (_) async => ApiResponse.success(
+              const MessageWithPartsResponse(
+                messages: [],
+                nextCursor: null,
+                userMessagesBefore: null,
+                replayedPromptDefaults: null,
+                cannotContinueMessage: null,
+              ),
+            ),
+          );
+        }
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+        await _awaitLoaded(cubit);
+        final loaded = cubit.state as SessionDetailLoaded;
+        expect(loaded.availableProviders.first.models.values.every((model) => model.isAvailable), isTrue);
+        expect(loaded.availableProviders.last.models.values.every((model) => !model.isAvailable), isTrue);
+        cubit.selectModel(providerID: other.id, modelID: other.models.keys.first);
+        expect((cubit.state as SessionDetailLoaded).selectedAgentModel, loaded.selectedAgentModel);
+      });
+    }
+
     group("approval mode", () {
       Future<SessionDetailCubit> loadedCubit({
         required bool bridgeYolo,

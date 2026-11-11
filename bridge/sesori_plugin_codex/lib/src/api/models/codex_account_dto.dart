@@ -20,7 +20,7 @@ enum CodexAccountKind() {
 @Freezed(fromJson: true, toJson: false)
 sealed class CodexAccountKindDto with _$CodexAccountKindDto {
   const factory({
-    @JsonKey(unknownEnumValue: CodexAccountKind.unknown) required CodexAccountKind type,
+    @JsonKey(fromJson: _accountKindFromJson) required CodexAccountKind type,
   }) = _CodexAccountKindDto;
 
   factory fromJson(
@@ -28,10 +28,18 @@ sealed class CodexAccountKindDto with _$CodexAccountKindDto {
   ) => _$CodexAccountKindDtoFromJson(json);
 }
 
+// Preserve future string tags, but reject malformed non-string account kinds.
+CodexAccountKind _accountKindFromJson(String value) => switch (value) {
+  "chatgpt" => CodexAccountKind.chatgpt,
+  "apiKey" => CodexAccountKind.apiKey,
+  _ => CodexAccountKind.unknown,
+};
+
 @Freezed(fromJson: true, toJson: false)
 sealed class CodexAccountReadResponseDto with _$CodexAccountReadResponseDto {
   const factory({
     required CodexAccountKindDto? account,
+    required bool? requiresOpenaiAuth,
   }) = _CodexAccountReadResponseDto;
 
   factory fromJson(

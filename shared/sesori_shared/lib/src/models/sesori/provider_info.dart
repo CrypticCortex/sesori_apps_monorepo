@@ -12,6 +12,9 @@ part "provider_info.g.dart";
 @Freezed(fromJson: true, toJson: true)
 sealed class ProviderInfo with _$ProviderInfo {
   const factory({
+    /// Older bridges do not declare a restriction on provider switching.
+    // COMPATIBILITY 2026-11-11 (v1.13.0): Older bridges omit this capability. Retire this default when the minimum supported bridge always reports it.
+    @Default(false) bool isSessionFixed,
     required String id,
     required String name,
     required Map<String, ProviderModel> models,

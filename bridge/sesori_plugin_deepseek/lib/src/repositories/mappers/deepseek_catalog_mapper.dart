@@ -9,6 +9,7 @@ class const DeepSeekCatalogMapper() {
       for (final provider in response.providers)
         if (provider.models.isNotEmpty)
           PluginProvider(
+            isSessionFixed: false,
             id: provider.id,
             name: provider.name,
             authType: PluginProviderAuthType.unknown,

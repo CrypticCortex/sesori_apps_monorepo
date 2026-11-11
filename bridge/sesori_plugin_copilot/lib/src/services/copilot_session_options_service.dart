@@ -352,6 +352,7 @@ class CopilotSessionOptionsService({
     return PluginProvidersResult(
       providers: [
         PluginProvider(
+          isSessionFixed: false,
           id: _providerId,
           name: CopilotPluginIdentity.displayName,
           authType: PluginProviderAuthType.unknown,

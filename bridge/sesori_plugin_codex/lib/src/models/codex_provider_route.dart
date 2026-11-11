@@ -1,15 +1,15 @@
-/// The two explicit OpenAI billing routes exposed by the Codex model picker.
-enum CodexAuthenticationMode({
+/// Codex native credentials and the explicitly selected environment-key route.
+enum CodexProviderRoute({
   required final String providerID,
 }) {
-  chatgptSubscription(
+  nativeLogin(
     providerID: "openai",
   ),
-  apiKey(
+  openAiApi(
     providerID: "sesori-openai-api",
   );
 
-  static CodexAuthenticationMode? fromProviderID({required String? providerID}) {
+  static CodexProviderRoute? fromProviderID({required String? providerID}) {
     for (final mode in values) {
       if (mode.providerID == providerID) return mode;
     }

@@ -91,18 +91,18 @@ class CodexAppServerApi({required final CodexAppServerTransport _client}) {
         ),
       );
 
-  Future<CodexAccountKind?> readAccountKind() async {
+  Future<CodexAccountReadResponseDto> readAccount({required Duration timeout}) async {
     final result = await _client.request(
       method: "account/read",
       params: const {"refreshToken": false},
-      timeout: codexRequestTimeout,
+      timeout: timeout,
     );
     final response = _decodeAccountResponse(
       result: result,
       operation: "account/read",
       decode: CodexAccountReadResponseDto.fromJson,
     );
-    return response.account?.type;
+    return response;
   }
 
   Future<CodexDeviceLoginStartResponseDto> startDeviceLogin({

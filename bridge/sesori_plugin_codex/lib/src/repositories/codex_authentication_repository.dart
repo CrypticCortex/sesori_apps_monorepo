@@ -2,7 +2,6 @@ import "dart:async";
 
 import "../api/codex_app_server_api.dart";
 import "../api/models/codex_account_dto.dart";
-import "../models/codex_authentication_mode.dart";
 
 final class const CodexAuthenticationChallenge({
   required final Uri verificationUri,
@@ -26,12 +25,13 @@ class CodexAuthenticationRepository({
   Completer<void>? _completion;
   String? _loginId;
 
-  /// Maps private backend account metadata to the local authentication domain.
-  Future<CodexAuthenticationMode?> readMode() async => switch (await _appServerApi.readAccountKind()) {
-    CodexAccountKind.chatgpt => CodexAuthenticationMode.chatgptSubscription,
-    CodexAccountKind.apiKey => CodexAuthenticationMode.apiKey,
-    CodexAccountKind.unknown || null => null,
-  };
+  /// A present future account kind still belongs to Codex's auth boundary.
+  Future<CodexAccountKind?> readAccountKind() async {
+    final response = await _appServerApi.readAccount(timeout: _requestTimeout);
+    // A no-auth custom default suppresses account discovery. That is not
+    // evidence of a missing native login; let Codex validate that route.
+    return response.account?.type ?? (response.requiresOpenaiAuth == false ? CodexAccountKind.unknown : null);
+  }
 
   Future<CodexAuthenticationChallenge> start() async {
     if (_completion != null) {

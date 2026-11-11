@@ -7,6 +7,7 @@ part of 'provider_info.dart';
 // **************************************************************************
 
 _ProviderInfo _$ProviderInfoFromJson(Map json) => _ProviderInfo(
+  isSessionFixed: json['isSessionFixed'] as bool? ?? false,
   id: json['id'] as String,
   name: json['name'] as String,
   models: (json['models'] as Map).map(
@@ -20,6 +21,7 @@ _ProviderInfo _$ProviderInfoFromJson(Map json) => _ProviderInfo(
 
 Map<String, dynamic> _$ProviderInfoToJson(_ProviderInfo instance) =>
     <String, dynamic>{
+      'isSessionFixed': instance.isSessionFixed,
       'id': instance.id,
       'name': instance.name,
       'models': instance.models.map((k, e) => MapEntry(k, e.toJson())),

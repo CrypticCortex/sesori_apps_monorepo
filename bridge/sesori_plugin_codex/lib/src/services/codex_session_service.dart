@@ -3,10 +3,11 @@ import "package:sesori_bridge_foundation/sesori_bridge_foundation.dart"
     show normalizeProjectDirectory, sesoriAgentInstructions;
 import "package:sesori_plugin_interface/sesori_plugin_interface.dart";
 
+import "../api/models/codex_account_dto.dart";
 import "../codex_config_reader.dart";
 import "../codex_metadata_repository.dart";
-import "../models/codex_authentication_mode.dart";
 import "../models/codex_collaboration_mode.dart";
+import "../models/codex_provider_route.dart";
 import "../models/codex_replay_tool_disposition.dart";
 import "../repositories/codex_authentication_repository.dart";
 import "../repositories/codex_catalog_repository.dart";
@@ -550,16 +551,18 @@ class CodexSessionService({
     required String? modelProvider,
     required bool fastMode,
   }) async {
-    // The managed process keeps native account discovery active. Resolve an
-    // omitted first-thread choice here so custom host defaults still apply.
+    // An explicit choice stays authoritative; only an omitted choice uses
+    // the catalog default that is usable with the bridge credentials.
+    final automaticModel = modelProvider == null && _apiKeyConfigured
+        ? (await _resolveModelOptions(projectId: cwd)).agents.first.model
+        : null;
     final selectedProvider =
-        modelProvider ??
-        _metadataRepository.readConfigDefaults().modelProvider ??
-        CodexAuthenticationMode.chatgptSubscription.providerID;
+        modelProvider ?? automaticModel?.providerID ?? _metadataRepository.readConfigDefaults().effectiveModelProvider;
+    final selectedModel = model ?? automaticModel?.modelID;
     await _validateAuthentication(modelProvider: selectedProvider);
     final thread = await _connectedThreadRepository.startThread(
       cwd: cwd,
-      model: model,
+      model: selectedModel,
       modelProvider: selectedProvider,
       fastMode: fastMode,
       developerInstructions: await _developerInstructions(cwd: cwd),
@@ -568,7 +571,7 @@ class CodexSessionService({
       throw StateError("Codex did not start the requested model provider; no request was generated.");
     }
     _loadedThreads[thread.id] = thread;
-    _rememberThreadModel(threadId: thread.id, model: thread.model ?? model);
+    _rememberThreadModel(threadId: thread.id, model: thread.model ?? selectedModel);
     return thread;
   }
 
@@ -591,8 +594,8 @@ class CodexSessionService({
         "Start a new Codex session to change its model provider.",
       );
     }
-    await _validateAuthentication(modelProvider: fixedProvider);
     if (!force && loaded != null) return null;
+    await _validateAuthentication(modelProvider: fixedProvider);
     final resumed = await _connectedThreadRepository.resumeThread(
       threadId: threadId,
       modelProvider: fixedProvider,
@@ -828,15 +831,15 @@ class CodexSessionService({
   }
 
   Future<void> _validateAuthentication({required String? modelProvider}) async {
-    switch (CodexAuthenticationMode.fromProviderID(providerID: modelProvider)) {
-      case CodexAuthenticationMode.chatgptSubscription:
-        if (await _connectedAuthenticationRepository.readMode() != CodexAuthenticationMode.chatgptSubscription) {
+    switch (CodexProviderRoute.fromProviderID(providerID: modelProvider)) {
+      case CodexProviderRoute.nativeLogin:
+        if (await _connectedAuthenticationRepository.readAccountKind() == null) {
           throw StateError(
-            "ChatGPT subscription requires a ChatGPT sign-in. Sign in to Codex with ChatGPT, "
+            "Codex login is required. Sign in to Codex with ChatGPT or an API key, "
             "or select OpenAI API to use OPENAI_API_KEY.",
           );
         }
-      case CodexAuthenticationMode.apiKey:
+      case CodexProviderRoute.openAiApi:
         if (!_apiKeyConfigured) {
           throw StateError(
             "OpenAI API requires OPENAI_API_KEY in the bridge environment. "
@@ -978,31 +981,20 @@ class CodexSessionService({
     final records = await _catalogRepository.listSessionRecords();
     final config = _metadataRepository.readConfigDefaults();
     final target = normalizeProjectDirectory(directory: projectId);
-    for (final thread in _loadedThreads.values) {
+    final candidates = <CodexThreadRecord>[
+      ..._loadedThreads.values,
+      for (final record in records) _sessionMapper.mapPersistedThread(record: record),
+    ]..sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0).compareTo(a.updatedAt ?? a.createdAt ?? 0));
+    for (final thread in candidates) {
       final directory = normalizeProjectDirectory(directory: thread.directory ?? _launchDirectory);
       if (directory == target || p.isWithin(target, directory)) {
         return (
           modelID: _threadModels[thread.id] ?? thread.model ?? config.model,
-          providerID:
-              thread.modelProvider ?? config.modelProvider ?? CodexAuthenticationMode.chatgptSubscription.providerID,
+          providerID: thread.modelProvider ?? config.effectiveModelProvider,
         );
       }
     }
-    for (final record in records) {
-      final directory = normalizeProjectDirectory(
-        directory: record.cwd ?? _launchDirectory,
-      );
-      if (directory == target || p.isWithin(target, directory)) {
-        return (
-          modelID: record.model ?? config.model,
-          providerID: record.modelProvider ?? config.effectiveModelProvider,
-        );
-      }
-    }
-    return (
-      modelID: config.model,
-      providerID: config.effectiveModelProvider,
-    );
+    return (modelID: config.model, providerID: config.effectiveModelProvider);
   }
 
   String? selectCatalogDefaultModel({
@@ -1032,8 +1024,10 @@ class CodexSessionService({
     );
     final catalogResult = await catalogFuture;
     final catalog = catalogResult.catalog;
-    final catalogModelIds = [for (final model in catalog.models) model.id];
-    final scopedMode = CodexAuthenticationMode.fromProviderID(providerID: providerID);
+    final account = await _readNativeAccount();
+    final apiCatalogResult = await _listApiModels(nativeCatalog: catalog);
+    final apiCatalog = apiCatalogResult.catalog;
+    final scopedMode = CodexProviderRoute.fromProviderID(providerID: providerID);
     PluginModel fallbackModel({required String id}) => PluginModel(
       fastMode: null,
       id: id,
@@ -1043,44 +1037,60 @@ class CodexSessionService({
       isAvailable: true,
       releaseDate: null,
     );
+    final nativeModels = catalog.models.isEmpty && scopedMode == CodexProviderRoute.nativeLogin && modelID != null
+        ? [fallbackModel(id: modelID)]
+        : catalog.models;
+    final nativeDefault = catalog.models.isEmpty && scopedMode == CodexProviderRoute.nativeLogin
+        ? modelID
+        : catalog.defaultModelID;
+    final nativeLabel = switch (account.kind) {
+      CodexAccountKind.chatgpt => "ChatGPT subscription",
+      CodexAccountKind.apiKey => "OpenAI API (Codex login)",
+      CodexAccountKind.unknown || null => "Codex login",
+    };
+    final nativeSuffix = switch (account.kind) {
+      CodexAccountKind.chatgpt => "ChatGPT",
+      CodexAccountKind.apiKey => "API login",
+      CodexAccountKind.unknown || null => "Codex login",
+    };
     final providers = <PluginProvider>[
-      for (final mode in CodexAuthenticationMode.values)
+      for (final mode in CodexProviderRoute.values)
         PluginProvider(
           id: mode.providerID,
-          name: switch (mode) {
-            CodexAuthenticationMode.chatgptSubscription => "ChatGPT subscription",
-            CodexAuthenticationMode.apiKey => "OpenAI API",
-          },
-          authType: switch (mode) {
-            CodexAuthenticationMode.chatgptSubscription => PluginProviderAuthType.oauth,
-            CodexAuthenticationMode.apiKey => PluginProviderAuthType.apiKey,
-          },
+          isSessionFixed: true,
+          name: mode == CodexProviderRoute.nativeLogin ? nativeLabel : "OpenAI API",
+          authType: mode == CodexProviderRoute.openAiApi || account.kind == CodexAccountKind.apiKey
+              ? PluginProviderAuthType.apiKey
+              : account.kind == CodexAccountKind.chatgpt
+              ? PluginProviderAuthType.oauth
+              : PluginProviderAuthType.unknown,
           models: [
-            for (final model
-                in catalog.models.isEmpty && scopedMode == mode && modelID != null
-                    ? [fallbackModel(id: modelID)]
-                    : catalog.models)
+            for (final model in mode == CodexProviderRoute.openAiApi ? apiCatalog.models : nativeModels)
               model.copyWith(
-                name: "${model.name} · ${mode == CodexAuthenticationMode.chatgptSubscription ? "ChatGPT" : "API"}",
+                name: "${model.name} · ${mode == CodexProviderRoute.nativeLogin ? nativeSuffix : 'API'}",
+                isAvailable: model.isAvailable && (mode == CodexProviderRoute.openAiApi || account.kind != null),
               ),
           ],
           defaultModelID: selectCatalogDefaultModel(
             scopedModelID: scopedMode == mode ? modelID : null,
-            catalogModelIds: catalogModelIds,
-            catalogDefaultId: catalog.models.isEmpty && scopedMode == mode ? modelID : catalog.defaultModelID,
+            catalogModelIds: [
+              for (final model in mode == CodexProviderRoute.openAiApi ? apiCatalog.models : nativeModels) model.id,
+            ],
+            catalogDefaultId: mode == CodexProviderRoute.openAiApi ? apiCatalog.defaultModelID : nativeDefault,
           ),
         ),
     ];
     final config = _metadataRepository.readConfigDefaults();
     final customDefaults = <String, String?>{
       if (config.modelProvider case final configuredProvider?
-          when CodexAuthenticationMode.fromProviderID(providerID: configuredProvider) == null)
+          when CodexProviderRoute.fromProviderID(providerID: configuredProvider) == null)
         configuredProvider: config.model,
       if (scopedMode == null) providerID: modelID,
     };
     for (final entry in customDefaults.entries) {
       providers.add(
         PluginProvider(
+          isSessionFixed: true,
           id: entry.key,
           name: _providerDisplayName(providerID: entry.key),
           authType: PluginProviderAuthType.unknown,
@@ -1089,12 +1099,16 @@ class CodexSessionService({
         ),
       );
     }
-    final selectedModelID = providers.firstWhere((provider) => provider.id == providerID).defaultModelID;
+    final preferred = providers.firstWhere((provider) => provider.id == providerID);
+    final selected = preferred.models.any((model) => model.isAvailable)
+        ? preferred
+        : providers.where((provider) => provider.models.any((model) => model.isAvailable)).firstOrNull;
+    final selectedModelID = selected?.defaultModelID;
     final agentModel = selectedModelID == null
         ? null
         : PluginAgentModel(
             modelID: selectedModelID,
-            providerID: providerID,
+            providerID: selected?.id ?? providerID,
             variant: null,
           );
     return (
@@ -1109,7 +1123,11 @@ class CodexSessionService({
         ),
       ],
       providers: PluginProvidersResult(providers: providers),
-      usedFallback: catalogResult.usedFallback || (catalog.models.isEmpty && modelID != null),
+      usedFallback:
+          catalogResult.usedFallback ||
+          account.usedFallback ||
+          apiCatalogResult.usedFallback ||
+          (catalog.models.isEmpty && modelID != null),
     );
   }
 
@@ -1133,6 +1151,30 @@ class CodexSessionService({
         catalog: (defaultModelID: null, models: const <PluginModel>[]),
         usedFallback: true,
       );
+    }
+  }
+
+  Future<({CodexAccountKind? kind, bool usedFallback})> _readNativeAccount() async {
+    try {
+      return (kind: await _connectedAuthenticationRepository.readAccountKind(), usedFallback: false);
+    } on Object catch (error, stackTrace) {
+      Log.w("[codex] account discovery failed; native models unavailable", error, stackTrace);
+      return (kind: null, usedFallback: true);
+    }
+  }
+
+  Future<({CodexModelCatalog catalog, bool usedFallback})> _listApiModels({
+    required CodexModelCatalog nativeCatalog,
+  }) async {
+    final repository = _modelRepository;
+    if (!_apiKeyConfigured || repository == null) {
+      return (catalog: (defaultModelID: null, models: const <PluginModel>[]), usedFallback: false);
+    }
+    try {
+      return (catalog: await repository.listApiModels(nativeCatalog: nativeCatalog), usedFallback: false);
+    } on Object catch (error, stackTrace) {
+      Log.w("[codex] API model discovery failed; API models unavailable", error, stackTrace);
+      return (catalog: (defaultModelID: null, models: const <PluginModel>[]), usedFallback: true);
     }
   }
 

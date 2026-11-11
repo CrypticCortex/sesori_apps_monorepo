@@ -28,10 +28,10 @@ void main() {
       addTearDown(transport.dispose);
       final api = CodexAppServerApi(client: transport);
 
-      expect(await api.readAccountKind(), CodexAccountKind.chatgpt);
-      expect(await api.readAccountKind(), CodexAccountKind.apiKey);
-      expect(await api.readAccountKind(), CodexAccountKind.unknown);
-      expect(await api.readAccountKind(), isNull);
+      expect((await api.readAccount(timeout: const Duration(seconds: 1))).account?.type, CodexAccountKind.chatgpt);
+      expect((await api.readAccount(timeout: const Duration(seconds: 1))).account?.type, CodexAccountKind.apiKey);
+      expect((await api.readAccount(timeout: const Duration(seconds: 1))).account?.type, CodexAccountKind.unknown);
+      expect((await api.readAccount(timeout: const Duration(seconds: 1))).account?.type, isNull);
       expect(transport.calls.map((call) => call.method), everyElement("account/read"));
       expect(
         transport.calls.map((call) => call.params),

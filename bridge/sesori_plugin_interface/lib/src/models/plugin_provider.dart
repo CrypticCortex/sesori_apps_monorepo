@@ -62,6 +62,8 @@ enum PluginFastModeUnavailableReason() {
 @freezed
 sealed class PluginProvider with _$PluginProvider {
   const factory({
+    /// The provider is chosen at session creation and cannot be changed later.
+    required bool isSessionFixed,
     required String id,
     required String name,
     required PluginProviderAuthType authType,

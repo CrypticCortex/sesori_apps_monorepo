@@ -396,6 +396,7 @@ class WritableRepository() implements OpenCodeV2Repository {
     return const PluginProvidersResult(
       providers: [
         PluginProvider(
+          isSessionFixed: false,
           id: "p",
           name: "Provider",
           authType: PluginProviderAuthType.apiKey,

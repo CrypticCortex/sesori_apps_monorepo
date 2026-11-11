@@ -3,6 +3,8 @@ import "dart:convert";
 import "dart:io";
 
 import "package:codex_plugin/codex_plugin.dart";
+import "package:http/http.dart" as http;
+import "package:http/testing.dart";
 import "package:path/path.dart" as p;
 import "package:sesori_plugin_interface/sesori_plugin_interface.dart";
 import "package:test/test.dart";
@@ -17,8 +19,26 @@ void main() {
   late Directory home;
   late _RoutingAppServer server;
   late CodexPlugin plugin;
+  var apiCatalogStatus = 200;
+  Future<T> discover<T>(Future<T> Function() load) => http.runWithClient(
+    load,
+    () => MockClient((request) async {
+      expect(request.url.toString(), "https://api.openai.com/v1/models");
+      expect(request.headers["Authorization"], "Bearer $_dummyKey");
+      return http.Response(
+        jsonEncode({
+          "data": [
+            {"id": _model},
+            {"id": "audio-only"},
+          ],
+        }),
+        apiCatalogStatus,
+      );
+    }),
+  );
 
   setUp(() async {
+    apiCatalogStatus = 200;
     home = await Directory.systemTemp.createTemp("codex-auth-choice-");
     server = await _RoutingAppServer.start();
   });
@@ -44,14 +64,14 @@ void main() {
     );
   }
 
-  Future<PluginSession> create({required String provider}) => plugin.createSession(
+  Future<PluginSession> create({required String? provider}) => plugin.createSession(
     directory: "/repo/fixture",
     parentSessionId: null,
     parts: const [PluginPromptPart.text(text: "fixture prompt")],
     userVisibleText: null,
     variant: null,
     agent: null,
-    model: (providerID: provider, modelID: _model),
+    model: provider == null ? null : (providerID: provider, modelID: _model),
     fastMode: false,
   );
 
@@ -93,30 +113,40 @@ void main() {
       expect(jsonEncode(server.calls.map((call) => call.params).toList()), isNot(contains(_dummyKey)));
     });
 
-    test("subscription rejects ${account ?? 'absent'} account before creation or provider mutation", () async {
-      server.accountType = account;
-      configure(apiKeyConfigured: true);
+    test(
+      "native login accepts supported or future account kinds and rejects only absence (${account ?? 'absent'})",
+      () async {
+        server.accountType = account;
+        configure(apiKeyConfigured: true);
 
-      await expectLater(create(provider: "openai"), throwsA(isA<StateError>()));
-      expect(server.calls.map((call) => call.method), isNot(contains("thread/start")));
-      expect(server.generations, isEmpty);
+        if (account != null) {
+          await create(provider: "openai");
+          await prompt(provider: "openai");
+          expect(server.generations.map((generation) => generation.provider), everyElement("openai"));
+          return;
+        }
 
-      await create(provider: _apiProvider);
-      final acceptedGenerations = List<_Generation>.of(server.generations);
-      final resumes = server.resumeProviders.length;
-      for (final action in <Future<void> Function()>[
-        () => prompt(provider: "openai"),
-        () => command(name: "review", provider: "openai"),
-        () => command(name: "compact", provider: "openai"),
-      ]) {
-        await expectLater(action(), throwsA(isA<StateError>()));
-        expect(server.provider, _apiProvider);
-        expect(server.resumeProviders, hasLength(resumes));
-        expect(server.generations, acceptedGenerations);
-      }
-      await prompt(provider: null);
-      expect(server.generations.last.provider, _apiProvider);
-    });
+        await expectLater(create(provider: "openai"), throwsA(isA<StateError>()));
+        expect(server.calls.map((call) => call.method), isNot(contains("thread/start")));
+        expect(server.generations, isEmpty);
+
+        await create(provider: _apiProvider);
+        final acceptedGenerations = List<_Generation>.of(server.generations);
+        final resumes = server.resumeProviders.length;
+        for (final action in <Future<void> Function()>[
+          () => prompt(provider: "openai"),
+          () => command(name: "review", provider: "openai"),
+          () => command(name: "compact", provider: "openai"),
+        ]) {
+          await expectLater(action(), throwsA(isA<StateError>()));
+          expect(server.provider, _apiProvider);
+          expect(server.resumeProviders, hasLength(resumes));
+          expect(server.generations, acceptedGenerations);
+        }
+        await prompt(provider: null);
+        expect(server.generations.last.provider, _apiProvider);
+      },
+    );
   }
 
   for (final (index, response) in <Object>[
@@ -140,6 +170,17 @@ void main() {
       expect(server.provider, "openai");
     });
   }
+
+  test("loaded native sessions check authentication once until an actual resume", () async {
+    configure(apiKeyConfigured: false);
+    await create(provider: "openai");
+    await prompt(provider: null);
+    await command(name: "compact", provider: null);
+    expect(server.calls.where((call) => call.method == "account/read"), hasLength(1));
+    server.failNextGeneration = true;
+    await prompt(provider: null);
+    expect(server.calls.where((call) => call.method == "account/read"), hasLength(2));
+  });
 
   test("missing standard environment key rejects API without falling back to subscription", () async {
     server.accountType = "apiKey";
@@ -227,7 +268,7 @@ void main() {
     configure(apiKeyConfigured: false, provider: "openai", model: "gpt-other");
     await prompt(provider: null);
 
-    final options = await plugin.getProviders(projectId: "/repo/fixture");
+    final options = await discover(() => plugin.getProviders(projectId: "/repo/fixture"));
     final custom = options.providers.singleWhere((provider) => provider.id == "fixture-custom");
     expect(custom.defaultModelID, _model);
     expect(custom.models.map((model) => model.id), [_model]);
@@ -265,9 +306,9 @@ void main() {
   });
 
   test("catalog exposes both billing routes without inventing custom-provider models or defaults", () async {
-    configure(apiKeyConfigured: false, provider: "fixture-custom", model: "custom-only-model");
+    configure(apiKeyConfigured: true, provider: "fixture-custom", model: "custom-only-model");
     await plugin.initialize();
-    final options = await plugin.getProviders(projectId: "/repo/fixture");
+    final options = await discover(() => plugin.getProviders(projectId: "/repo/fixture"));
     final providers = {for (final provider in options.providers) provider.id: provider};
 
     expect(providers.keys, ["openai", _apiProvider, "fixture-custom"]);
@@ -277,7 +318,7 @@ void main() {
     expect(providers[_apiProvider]?.authType, PluginProviderAuthType.apiKey);
     for (final id in ["openai", _apiProvider]) {
       expect(providers[id]?.defaultModelID, _model);
-      expect(providers[id]?.models.map((model) => model.id), [_model, "gpt-other"]);
+      expect(providers[id]?.models.map((model) => model.id), id == "openai" ? [_model, "gpt-other"] : [_model]);
     }
     expect(providers["openai"]?.models.first.name, "Fixture model · ChatGPT");
     expect(providers[_apiProvider]?.models.first.name, "Fixture model · API");
@@ -285,14 +326,61 @@ void main() {
     expect(providers["fixture-custom"]?.models.map((model) => model.id), ["custom-only-model"]);
   });
 
+  test("environment-key-only setup defaults to the available API route", () async {
+    server.accountType = null;
+    configure(apiKeyConfigured: true);
+    await plugin.initialize();
+    final agents = await discover(() => plugin.getAgents(projectId: "/repo/fixture"));
+    expect(agents.single.model?.providerID, _apiProvider);
+    final providers = (await discover(() => plugin.getProviders(projectId: "/repo/fixture"))).providers;
+    expect(providers.first.models.every((model) => !model.isAvailable), isTrue);
+    expect(providers.last.models.map((model) => model.id), [_model]);
+    await discover(() => create(provider: null));
+    expect(server.generations.single.provider, _apiProvider);
+  });
+
+  test("missing environment key omits API models before selection", () async {
+    configure(apiKeyConfigured: false);
+    await plugin.initialize();
+    final providers = (await plugin.getProviders(projectId: "/repo/fixture")).providers;
+    expect(providers.singleWhere((provider) => provider.id == _apiProvider).models, isEmpty);
+    expect(providers.every((provider) => provider.isSessionFixed), isTrue);
+  });
+
+  test("API catalog denial keeps native models usable and API models unavailable", () async {
+    configure(apiKeyConfigured: true);
+    apiCatalogStatus = 401;
+    await plugin.initialize();
+    final providers = (await discover(() => plugin.getProviders(projectId: "/repo/fixture"))).providers;
+    expect(providers.first.models.every((model) => model.isAvailable), isTrue);
+    expect(providers.last.models, isEmpty);
+  });
+
+  test("native API-key login is labeled as API billing", () async {
+    server.accountType = "apiKey";
+    configure(apiKeyConfigured: false);
+    await plugin.initialize();
+    final native = (await plugin.getProviders(projectId: "/repo/fixture")).providers.first;
+    expect(native.name, "OpenAI API (Codex login)");
+    expect(native.authType, PluginProviderAuthType.apiKey);
+    expect(native.models.every((model) => model.isAvailable && model.name.endsWith("API login")), isTrue);
+  });
+
+  test("a no-auth custom default does not manufacture a missing native account", () async {
+    server.accountResponse = {"account": null, "requiresOpenaiAuth": false};
+    configure(apiKeyConfigured: false, provider: "fixture-custom");
+    await create(provider: "openai");
+    expect(server.generations.single.provider, "openai");
+  });
+
   for (final selectedProvider in ["openai", _apiProvider]) {
     test("project defaults are scoped to $selectedProvider rather than leaking across billing routes", () async {
-      configure(apiKeyConfigured: false, provider: selectedProvider, model: "gpt-other");
+      configure(apiKeyConfigured: true, provider: selectedProvider, model: "gpt-other");
       await plugin.initialize();
-      final options = await plugin.getProviders(projectId: "/repo/fixture");
+      final options = await discover(() => plugin.getProviders(projectId: "/repo/fixture"));
       final providers = {for (final provider in options.providers) provider.id: provider};
 
-      expect(providers[selectedProvider]?.defaultModelID, "gpt-other");
+      expect(providers[selectedProvider]?.defaultModelID, selectedProvider == "openai" ? "gpt-other" : _model);
       final otherProvider = selectedProvider == "openai" ? _apiProvider : "openai";
       expect(providers[otherProvider]?.defaultModelID, _model);
     });

@@ -2990,7 +2990,10 @@ class SessionDetailCubit(
 
       if (result case SessionOptionsRepositoryAvailable(:final catalog)) {
         final agents = _selection.selectableAgents(agents: catalog.agents);
-        final providers = catalog.providers;
+        final providers = _selection.providersForSession(
+          providers: catalog.providers,
+          recordedProviderID: latest.assistantAgentModel?.providerID ?? latest.selectedAgentModel?.providerID,
+        );
         final commands = catalog.commands;
         // A refresh answers with the catalog the backend has now, so a selection
         // it no longer offers is corrected rather than retained — that
@@ -3478,6 +3481,13 @@ class SessionDetailCubit(
     final current = state;
     if (current is! SessionDetailLoaded) return;
 
+    if (current.availableProviders.any((provider) => provider.isSessionFixed) &&
+        !_selection.isModelAvailable(
+          providers: current.availableProviders,
+          model: AgentModel(providerID: providerID, modelID: modelID, variant: null),
+        )) {
+      return;
+    }
     final previousVariant = current.selectedAgentModel?.variant;
     final newModel = AgentModel(providerID: providerID, modelID: modelID, variant: null);
     final availableVariants = _selection.availableVariants(
@@ -3794,7 +3804,12 @@ class SessionDetailCubit(
       children: children,
       childStatuses: Map.fromEntries(snapshot.statuses.entries.where((entry) => childIds.contains(entry.key))),
       agents: _selection.selectableAgents(agents: snapshot.agents),
-      providers: snapshot.providerData?.items ?? <ProviderInfo>[],
+      providers: _selection.providersForSession(
+        providers: snapshot.providerData?.items ?? <ProviderInfo>[],
+        recordedProviderID:
+            _assistantAgentModel(messages: snapshot.messages, agents: snapshot.agents)?.providerID ??
+            snapshot.promptDefaults?.model?.providerID,
+      ),
     );
   }
 

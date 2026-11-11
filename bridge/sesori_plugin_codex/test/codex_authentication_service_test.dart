@@ -1,8 +1,8 @@
 import "dart:async";
 
+import "package:codex_plugin/src/api/models/codex_account_dto.dart";
 import "package:codex_plugin/src/codex_app_server_client.dart";
 import "package:codex_plugin/src/codex_stdio_app_server_client.dart";
-import "package:codex_plugin/src/models/codex_authentication_mode.dart";
 import "package:codex_plugin/src/repositories/codex_authentication_repository.dart";
 import "package:codex_plugin/src/services/codex_authentication_service.dart";
 import "package:sesori_plugin_interface/sesori_plugin_interface.dart";
@@ -182,7 +182,7 @@ class _FakeAuthenticationRepository({final Future<void>? cancelGate}) implements
 
   Future<void> get started => _started.future;
   @override
-  Future<CodexAuthenticationMode?> readMode() async => CodexAuthenticationMode.chatgptSubscription;
+  Future<CodexAccountKind?> readAccountKind() async => CodexAccountKind.chatgpt;
 
   @override
   Future<CodexAuthenticationChallenge> start() async {

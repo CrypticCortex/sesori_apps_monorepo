@@ -6,6 +6,7 @@ import "package:sesori_shared/sesori_shared.dart";
 extension PluginProviderMapper on PluginProvider {
   ProviderInfo toSharedProviderInfo() {
     return ProviderInfo(
+      isSessionFixed: isSessionFixed,
       id: id,
       name: name,
       defaultModelID: defaultModelID,

@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProviderInfo {
 
- String get id; String get name; Map<String, ProviderModel> get models; String? get defaultModelID;
+/// Older bridges do not declare a restriction on provider switching.
+ bool get isSessionFixed; String get id; String get name; Map<String, ProviderModel> get models; String? get defaultModelID;
 /// Create a copy of ProviderInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $ProviderInfoCopyWith<ProviderInfo> get copyWith => _$ProviderInfoCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as ProviderInfo;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderInfo&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&const DeepCollectionEquality().equals(other.models, _this.models)&&(identical(other.defaultModelID, _this.defaultModelID) || other.defaultModelID == _this.defaultModelID));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProviderInfo&&(identical(other.isSessionFixed, _this.isSessionFixed) || other.isSessionFixed == _this.isSessionFixed)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&const DeepCollectionEquality().equals(other.models, _this.models)&&(identical(other.defaultModelID, _this.defaultModelID) || other.defaultModelID == _this.defaultModelID));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ProviderInfo;
-  return Object.hash(runtimeType,_this.id,_this.name,const DeepCollectionEquality().hash(_this.models),_this.defaultModelID);
+  return Object.hash(runtimeType,_this.isSessionFixed,_this.id,_this.name,const DeepCollectionEquality().hash(_this.models),_this.defaultModelID);
 }
 
 @override
 String toString() {
   final _this = this as ProviderInfo;
-  return 'ProviderInfo(id: ${_this.id}, name: ${_this.name}, models: ${_this.models}, defaultModelID: ${_this.defaultModelID})';
+  return 'ProviderInfo(isSessionFixed: ${_this.isSessionFixed}, id: ${_this.id}, name: ${_this.name}, models: ${_this.models}, defaultModelID: ${_this.defaultModelID})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $ProviderInfoCopyWith<$Res>  {
   factory $ProviderInfoCopyWith(ProviderInfo value, $Res Function(ProviderInfo) _then) = _$ProviderInfoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, Map<String, ProviderModel> models, String? defaultModelID
+ bool isSessionFixed, String id, String name, Map<String, ProviderModel> models, String? defaultModelID
 });
 
 
@@ -71,9 +72,10 @@ class _$ProviderInfoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? models = null,Object? defaultModelID = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? isSessionFixed = null,Object? id = null,Object? name = null,Object? models = null,Object? defaultModelID = freezed,}) {
   return _then(ProviderInfo(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+isSessionFixed: null == isSessionFixed ? _self.isSessionFixed : isSessionFixed // ignore: cast_nullable_to_non_nullable
+as bool,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,models: null == models ? _self.models : models // ignore: cast_nullable_to_non_nullable
 as Map<String, ProviderModel>,defaultModelID: freezed == defaultModelID ? _self.defaultModelID : defaultModelID // ignore: cast_nullable_to_non_nullable
@@ -89,9 +91,11 @@ as String?,
 @JsonSerializable()
 
 class _ProviderInfo implements ProviderInfo {
-  const _ProviderInfo({required this.id, required this.name, required  Map<String, ProviderModel> models, required this.defaultModelID}): _models = models;
+  const _ProviderInfo({this.isSessionFixed = false, required this.id, required this.name, required  Map<String, ProviderModel> models, required this.defaultModelID}): _models = models;
   factory _ProviderInfo.fromJson(Map<String, dynamic> json) => _$ProviderInfoFromJson(json);
 
+/// Older bridges do not declare a restriction on provider switching.
+@override@JsonKey() final  bool isSessionFixed;
 @override final  String id;
 @override final  String name;
  final  Map<String, ProviderModel> _models;
@@ -116,18 +120,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.models, _models)&&(identical(other.defaultModelID, defaultModelID) || other.defaultModelID == defaultModelID));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProviderInfo&&(identical(other.isSessionFixed, isSessionFixed) || other.isSessionFixed == isSessionFixed)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.models, _models)&&(identical(other.defaultModelID, defaultModelID) || other.defaultModelID == defaultModelID));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,const DeepCollectionEquality().hash(_models),defaultModelID);
+    return Object.hash(runtimeType,isSessionFixed,id,name,const DeepCollectionEquality().hash(_models),defaultModelID);
 }
 
 @override
 String toString() {
-    return 'ProviderInfo(id: $id, name: $name, models: $models, defaultModelID: $defaultModelID)';
+    return 'ProviderInfo(isSessionFixed: $isSessionFixed, id: $id, name: $name, models: $models, defaultModelID: $defaultModelID)';
 }
 
 
@@ -138,7 +142,7 @@ abstract mixin class _$ProviderInfoCopyWith<$Res> implements $ProviderInfoCopyWi
   factory _$ProviderInfoCopyWith(_ProviderInfo value, $Res Function(_ProviderInfo) _then) = __$ProviderInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, Map<String, ProviderModel> models, String? defaultModelID
+ bool isSessionFixed, String id, String name, Map<String, ProviderModel> models, String? defaultModelID
 });
 
 
@@ -155,9 +159,10 @@ class __$ProviderInfoCopyWithImpl<$Res>
 
 /// Create a copy of ProviderInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? models = null,Object? defaultModelID = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? isSessionFixed = null,Object? id = null,Object? name = null,Object? models = null,Object? defaultModelID = freezed,}) {
   return _then(_ProviderInfo(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+isSessionFixed: null == isSessionFixed ? _self.isSessionFixed : isSessionFixed // ignore: cast_nullable_to_non_nullable
+as bool,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,models: null == models ? _self._models : models // ignore: cast_nullable_to_non_nullable
 as Map<String, ProviderModel>,defaultModelID: freezed == defaultModelID ? _self.defaultModelID : defaultModelID // ignore: cast_nullable_to_non_nullable

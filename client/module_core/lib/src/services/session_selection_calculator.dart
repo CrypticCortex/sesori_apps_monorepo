@@ -37,6 +37,25 @@ class const SessionSelectionCalculator() {
     return agents.where((agent) => !agent.hidden && agent.mode != AgentMode.subagent).toList(growable: false);
   }
 
+  /// A fixed-provider session keeps all other routes unavailable before the
+  /// user opens its picker. The catalog remains unfiltered for new sessions.
+  List<ProviderInfo> providersForSession({
+    required List<ProviderInfo> providers,
+    required String? recordedProviderID,
+  }) {
+    if (!providers.any((provider) => provider.isSessionFixed)) return providers;
+    return [
+      for (final provider in providers)
+        provider.id == recordedProviderID
+            ? provider
+            : provider.copyWith(
+                models: {
+                  for (final entry in provider.models.entries) entry.key: entry.value.copyWith(isAvailable: false),
+                },
+              ),
+    ];
+  }
+
   /// Whether [model] is one the catalog still offers.
   ///
   /// A model the backend marks unavailable counts as absent: it is listed so a

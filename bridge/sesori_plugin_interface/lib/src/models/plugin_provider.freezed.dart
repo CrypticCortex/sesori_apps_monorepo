@@ -398,7 +398,8 @@ as PluginFastModeUnavailableReason,
 /// @nodoc
 mixin _$PluginProvider {
 
- String get id; String get name; PluginProviderAuthType get authType; List<PluginModel> get models; String? get defaultModelID;
+/// The provider is chosen at session creation and cannot be changed later.
+ bool get isSessionFixed; String get id; String get name; PluginProviderAuthType get authType; List<PluginModel> get models; String? get defaultModelID;
 /// Create a copy of PluginProvider
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -412,20 +413,20 @@ $PluginProviderCopyWith<PluginProvider> get copyWith => _$PluginProviderCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as PluginProvider;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginProvider&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.authType, _this.authType) || other.authType == _this.authType)&&const DeepCollectionEquality().equals(other.models, _this.models)&&(identical(other.defaultModelID, _this.defaultModelID) || other.defaultModelID == _this.defaultModelID));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PluginProvider&&(identical(other.isSessionFixed, _this.isSessionFixed) || other.isSessionFixed == _this.isSessionFixed)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.authType, _this.authType) || other.authType == _this.authType)&&const DeepCollectionEquality().equals(other.models, _this.models)&&(identical(other.defaultModelID, _this.defaultModelID) || other.defaultModelID == _this.defaultModelID));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PluginProvider;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.authType,const DeepCollectionEquality().hash(_this.models),_this.defaultModelID);
+  return Object.hash(runtimeType,_this.isSessionFixed,_this.id,_this.name,_this.authType,const DeepCollectionEquality().hash(_this.models),_this.defaultModelID);
 }
 
 @override
 String toString() {
   final _this = this as PluginProvider;
-  return 'PluginProvider(id: ${_this.id}, name: ${_this.name}, authType: ${_this.authType}, models: ${_this.models}, defaultModelID: ${_this.defaultModelID})';
+  return 'PluginProvider(isSessionFixed: ${_this.isSessionFixed}, id: ${_this.id}, name: ${_this.name}, authType: ${_this.authType}, models: ${_this.models}, defaultModelID: ${_this.defaultModelID})';
 }
 
 
@@ -436,7 +437,7 @@ abstract mixin class $PluginProviderCopyWith<$Res>  {
   factory $PluginProviderCopyWith(PluginProvider value, $Res Function(PluginProvider) _then) = _$PluginProviderCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, PluginProviderAuthType authType, List<PluginModel> models, String? defaultModelID
+ bool isSessionFixed, String id, String name, PluginProviderAuthType authType, List<PluginModel> models, String? defaultModelID
 });
 
 
@@ -453,9 +454,10 @@ class _$PluginProviderCopyWithImpl<$Res>
 
 /// Create a copy of PluginProvider
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? authType = null,Object? models = null,Object? defaultModelID = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? isSessionFixed = null,Object? id = null,Object? name = null,Object? authType = null,Object? models = null,Object? defaultModelID = freezed,}) {
   return _then(PluginProvider(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+isSessionFixed: null == isSessionFixed ? _self.isSessionFixed : isSessionFixed // ignore: cast_nullable_to_non_nullable
+as bool,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,authType: null == authType ? _self.authType : authType // ignore: cast_nullable_to_non_nullable
 as PluginProviderAuthType,models: null == models ? _self.models : models // ignore: cast_nullable_to_non_nullable
@@ -472,9 +474,11 @@ as String?,
 @JsonSerializable(createFactory: false)
 
 class _PluginProvider implements PluginProvider {
-  const _PluginProvider({required this.id, required this.name, required this.authType, required  List<PluginModel> models, required this.defaultModelID}): _models = models;
+  const _PluginProvider({required this.isSessionFixed, required this.id, required this.name, required this.authType, required  List<PluginModel> models, required this.defaultModelID}): _models = models;
   
 
+/// The provider is chosen at session creation and cannot be changed later.
+@override final  bool isSessionFixed;
 @override final  String id;
 @override final  String name;
 @override final  PluginProviderAuthType authType;
@@ -500,18 +504,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginProvider&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.authType, authType) || other.authType == authType)&&const DeepCollectionEquality().equals(other.models, _models)&&(identical(other.defaultModelID, defaultModelID) || other.defaultModelID == defaultModelID));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PluginProvider&&(identical(other.isSessionFixed, isSessionFixed) || other.isSessionFixed == isSessionFixed)&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.authType, authType) || other.authType == authType)&&const DeepCollectionEquality().equals(other.models, _models)&&(identical(other.defaultModelID, defaultModelID) || other.defaultModelID == defaultModelID));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,authType,const DeepCollectionEquality().hash(_models),defaultModelID);
+    return Object.hash(runtimeType,isSessionFixed,id,name,authType,const DeepCollectionEquality().hash(_models),defaultModelID);
 }
 
 @override
 String toString() {
-    return 'PluginProvider(id: $id, name: $name, authType: $authType, models: $models, defaultModelID: $defaultModelID)';
+    return 'PluginProvider(isSessionFixed: $isSessionFixed, id: $id, name: $name, authType: $authType, models: $models, defaultModelID: $defaultModelID)';
 }
 
 
@@ -522,7 +526,7 @@ abstract mixin class _$PluginProviderCopyWith<$Res> implements $PluginProviderCo
   factory _$PluginProviderCopyWith(_PluginProvider value, $Res Function(_PluginProvider) _then) = __$PluginProviderCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, PluginProviderAuthType authType, List<PluginModel> models, String? defaultModelID
+ bool isSessionFixed, String id, String name, PluginProviderAuthType authType, List<PluginModel> models, String? defaultModelID
 });
 
 
@@ -539,9 +543,10 @@ class __$PluginProviderCopyWithImpl<$Res>
 
 /// Create a copy of PluginProvider
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? authType = null,Object? models = null,Object? defaultModelID = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? isSessionFixed = null,Object? id = null,Object? name = null,Object? authType = null,Object? models = null,Object? defaultModelID = freezed,}) {
   return _then(_PluginProvider(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+isSessionFixed: null == isSessionFixed ? _self.isSessionFixed : isSessionFixed // ignore: cast_nullable_to_non_nullable
+as bool,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,authType: null == authType ? _self.authType : authType // ignore: cast_nullable_to_non_nullable
 as PluginProviderAuthType,models: null == models ? _self._models : models // ignore: cast_nullable_to_non_nullable

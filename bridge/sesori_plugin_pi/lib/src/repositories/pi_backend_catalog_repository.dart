@@ -288,6 +288,7 @@ class PiBackendCatalogRepository({
     required String? defaultModelId,
   }) {
     return PluginProvider(
+      isSessionFixed: false,
       id: id,
       name: id,
       authType: PluginProviderAuthType.unknown,

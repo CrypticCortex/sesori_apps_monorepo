@@ -97,22 +97,30 @@ variant, and worktree mode, and creating the session with its first input.
   screen-reader label read "N sub-agents, M working", and a screen reader can open the list from it.
 - Options are discovered per plugin and cached under the plugin's declared
   coherence scope; retention and replacement are bridge-owned.
-- New Codex sessions distinguish ChatGPT subscription from OpenAI API in the
-  provider-grouped model picker, including a billing suffix on the selected
-  model. API needs `OPENAI_API_KEY` on the bridge; subscription needs a ChatGPT
-  Codex login. Missing credentials, wrong account kinds and malformed
-  subscription account responses reject creation before a generation request,
-  without changing authentication files or falling back to the other billing
-  route. A configured API key is checked for presence locally; OpenAI validates
-  its validity and authorization. Invalid or revoked API keys must surface an
-  API authentication failure, never retry through the subscription provider.
+- New Codex sessions distinguish the native login route from the separate
+  OpenAI API route, with a billing suffix on the selected model. Native ChatGPT
+  and API-key accounts are both accepted and labeled accurately; future account
+  kinds remain usable. Missing credentials disable native choices or omit API
+  choices before selection. Malformed native responses reject creation. API
+  needs `OPENAI_API_KEY` in the bridge process environment, including when a
+  desktop app or service launches it; a shell export alone may not reach it.
+  Its models must be both Codex-supported and returned by OpenAI for that key.
+  API discovery timeout/auth failures leave native choices usable. Key-only
+  setup defaults to an available API model. A revoked key or generation quota
+  failure must surface on the API route, without retrying through native login.
   Keys never enter catalogs, prompt payloads, process arguments, ownership
   records or history.
-- A Codex session keeps its original provider. Selecting a different provider
+- A Codex session keeps its original provider; its picker excludes other routes.
+  Selecting a different provider
   for a prompt, skill or compaction rejects that operation before resume or
   generation and tells the user to start a new session. Omitted selections,
   imports, reloads and not-loaded retries resolve the recorded provider, not
-  current global configuration. Configured custom providers remain available.
+  current global configuration. Loaded sessions do not recheck authentication
+  for every prompt/compaction, but an actual resume does, with a bounded timeout.
+  Project defaults use the most recently updated matching session. Configured
+  custom providers retain their server-wide default and model. Plain CLI resume
+  of an API session needs the matching provider block documented in
+  `HARNESS_CAPABILITIES.md`, as well as the key in that CLI's environment.
 - Claude's plugin-scoped discovery runs in its host-created state directory,
   never a selected project or the bridge process's launch directory. This keeps
   its global option probe on a valid, stable path when projects move or disappear.

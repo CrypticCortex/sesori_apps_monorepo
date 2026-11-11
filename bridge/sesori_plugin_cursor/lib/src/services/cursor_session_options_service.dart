@@ -111,6 +111,7 @@ class CursorSessionOptionsService({
     return PluginProvidersResult(
       providers: [
         PluginProvider(
+          isSessionFixed: false,
           id: _providerId,
           name: "Cursor",
           authType: PluginProviderAuthType.unknown,

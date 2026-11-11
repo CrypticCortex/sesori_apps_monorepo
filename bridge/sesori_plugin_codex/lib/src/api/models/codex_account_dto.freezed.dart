@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CodexAccountKindDto {
 
-@JsonKey(unknownEnumValue: CodexAccountKind.unknown) CodexAccountKind get type;
+@JsonKey(fromJson: _accountKindFromJson) CodexAccountKind get type;
 /// Create a copy of CodexAccountKindDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,7 +52,7 @@ abstract mixin class $CodexAccountKindDtoCopyWith<$Res>  {
   factory $CodexAccountKindDtoCopyWith(CodexAccountKindDto value, $Res Function(CodexAccountKindDto) _then) = _$CodexAccountKindDtoCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(unknownEnumValue: CodexAccountKind.unknown) CodexAccountKind type
+@JsonKey(fromJson: _accountKindFromJson) CodexAccountKind type
 });
 
 
@@ -84,10 +84,10 @@ as CodexAccountKind,
 @JsonSerializable(createToJson: false)
 
 class _CodexAccountKindDto implements CodexAccountKindDto {
-  const _CodexAccountKindDto({@JsonKey(unknownEnumValue: CodexAccountKind.unknown) required this.type});
+  const _CodexAccountKindDto({@JsonKey(fromJson: _accountKindFromJson) required this.type});
   factory _CodexAccountKindDto.fromJson(Map<String, dynamic> json) => _$CodexAccountKindDtoFromJson(json);
 
-@override@JsonKey(unknownEnumValue: CodexAccountKind.unknown) final  CodexAccountKind type;
+@override@JsonKey(fromJson: _accountKindFromJson) final  CodexAccountKind type;
 
 /// Create a copy of CodexAccountKindDto
 /// with the given fields replaced by the non-null parameter values.
@@ -121,7 +121,7 @@ abstract mixin class _$CodexAccountKindDtoCopyWith<$Res> implements $CodexAccoun
   factory _$CodexAccountKindDtoCopyWith(_CodexAccountKindDto value, $Res Function(_CodexAccountKindDto) _then) = __$CodexAccountKindDtoCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(unknownEnumValue: CodexAccountKind.unknown) CodexAccountKind type
+@JsonKey(fromJson: _accountKindFromJson) CodexAccountKind type
 });
 
 
@@ -152,7 +152,7 @@ as CodexAccountKind,
 /// @nodoc
 mixin _$CodexAccountReadResponseDto {
 
- CodexAccountKindDto? get account;
+ CodexAccountKindDto? get account; bool? get requiresOpenaiAuth;
 /// Create a copy of CodexAccountReadResponseDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -164,20 +164,20 @@ $CodexAccountReadResponseDtoCopyWith<CodexAccountReadResponseDto> get copyWith =
 @override
 bool operator ==(Object other) {
   final _this = this as CodexAccountReadResponseDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CodexAccountReadResponseDto&&(identical(other.account, _this.account) || other.account == _this.account));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CodexAccountReadResponseDto&&(identical(other.account, _this.account) || other.account == _this.account)&&(identical(other.requiresOpenaiAuth, _this.requiresOpenaiAuth) || other.requiresOpenaiAuth == _this.requiresOpenaiAuth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as CodexAccountReadResponseDto;
-  return Object.hash(runtimeType,_this.account);
+  return Object.hash(runtimeType,_this.account,_this.requiresOpenaiAuth);
 }
 
 @override
 String toString() {
   final _this = this as CodexAccountReadResponseDto;
-  return 'CodexAccountReadResponseDto(account: ${_this.account})';
+  return 'CodexAccountReadResponseDto(account: ${_this.account}, requiresOpenaiAuth: ${_this.requiresOpenaiAuth})';
 }
 
 
@@ -188,7 +188,7 @@ abstract mixin class $CodexAccountReadResponseDtoCopyWith<$Res>  {
   factory $CodexAccountReadResponseDtoCopyWith(CodexAccountReadResponseDto value, $Res Function(CodexAccountReadResponseDto) _then) = _$CodexAccountReadResponseDtoCopyWithImpl;
 @useResult
 $Res call({
- CodexAccountKindDto? account
+ CodexAccountKindDto? account, bool? requiresOpenaiAuth
 });
 
 
@@ -205,10 +205,11 @@ class _$CodexAccountReadResponseDtoCopyWithImpl<$Res>
 
 /// Create a copy of CodexAccountReadResponseDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? account = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? account = freezed,Object? requiresOpenaiAuth = freezed,}) {
   return _then(CodexAccountReadResponseDto(
 account: freezed == account ? _self.account : account // ignore: cast_nullable_to_non_nullable
-as CodexAccountKindDto?,
+as CodexAccountKindDto?,requiresOpenaiAuth: freezed == requiresOpenaiAuth ? _self.requiresOpenaiAuth : requiresOpenaiAuth // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 /// Create a copy of CodexAccountReadResponseDto
@@ -232,10 +233,11 @@ $CodexAccountKindDtoCopyWith<$Res>? get account {
 @JsonSerializable(createToJson: false)
 
 class _CodexAccountReadResponseDto implements CodexAccountReadResponseDto {
-  const _CodexAccountReadResponseDto({required this.account});
+  const _CodexAccountReadResponseDto({required this.account, required this.requiresOpenaiAuth});
   factory _CodexAccountReadResponseDto.fromJson(Map<String, dynamic> json) => _$CodexAccountReadResponseDtoFromJson(json);
 
 @override final  CodexAccountKindDto? account;
+@override final  bool? requiresOpenaiAuth;
 
 /// Create a copy of CodexAccountReadResponseDto
 /// with the given fields replaced by the non-null parameter values.
@@ -247,18 +249,18 @@ _$CodexAccountReadResponseDtoCopyWith<_CodexAccountReadResponseDto> get copyWith
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CodexAccountReadResponseDto&&(identical(other.account, account) || other.account == account));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CodexAccountReadResponseDto&&(identical(other.account, account) || other.account == account)&&(identical(other.requiresOpenaiAuth, requiresOpenaiAuth) || other.requiresOpenaiAuth == requiresOpenaiAuth));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,account);
+    return Object.hash(runtimeType,account,requiresOpenaiAuth);
 }
 
 @override
 String toString() {
-    return 'CodexAccountReadResponseDto(account: $account)';
+    return 'CodexAccountReadResponseDto(account: $account, requiresOpenaiAuth: $requiresOpenaiAuth)';
 }
 
 
@@ -269,7 +271,7 @@ abstract mixin class _$CodexAccountReadResponseDtoCopyWith<$Res> implements $Cod
   factory _$CodexAccountReadResponseDtoCopyWith(_CodexAccountReadResponseDto value, $Res Function(_CodexAccountReadResponseDto) _then) = __$CodexAccountReadResponseDtoCopyWithImpl;
 @override @useResult
 $Res call({
- CodexAccountKindDto? account
+ CodexAccountKindDto? account, bool? requiresOpenaiAuth
 });
 
 
@@ -286,10 +288,11 @@ class __$CodexAccountReadResponseDtoCopyWithImpl<$Res>
 
 /// Create a copy of CodexAccountReadResponseDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? account = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? account = freezed,Object? requiresOpenaiAuth = freezed,}) {
   return _then(_CodexAccountReadResponseDto(
 account: freezed == account ? _self.account : account // ignore: cast_nullable_to_non_nullable
-as CodexAccountKindDto?,
+as CodexAccountKindDto?,requiresOpenaiAuth: freezed == requiresOpenaiAuth ? _self.requiresOpenaiAuth : requiresOpenaiAuth // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 

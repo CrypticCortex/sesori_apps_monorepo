@@ -2,13 +2,14 @@ import "dart:async";
 import "dart:io";
 
 import "package:codex_plugin/src/api/codex_app_server_api.dart";
+import "package:codex_plugin/src/api/codex_open_ai_model_api.dart";
 import "package:codex_plugin/src/api/codex_rollout_api.dart";
 import "package:codex_plugin/src/api/codex_tool_outcome_storage.dart";
+import "package:codex_plugin/src/api/models/codex_account_dto.dart";
 import "package:codex_plugin/src/api/models/codex_tool_outcome_dto.dart";
 import "package:codex_plugin/src/codex_app_server_client.dart";
 import "package:codex_plugin/src/codex_config_reader.dart";
 import "package:codex_plugin/src/codex_metadata_repository.dart";
-import "package:codex_plugin/src/models/codex_authentication_mode.dart";
 import "package:codex_plugin/src/models/codex_collaboration_mode.dart";
 import "package:codex_plugin/src/models/codex_replay_tool_disposition.dart";
 import "package:codex_plugin/src/repositories/codex_authentication_repository.dart";
@@ -32,6 +33,25 @@ import "package:test/test.dart";
 import "support/codex_plugin_test_factory.dart";
 
 void main() {
+  test("project defaults follow updated time rather than loaded insertion order", () async {
+    final service = _newService();
+    service.attachAppServerRepositories(
+      authenticationRepository: _StubAuthenticationRepository(),
+      threadRepository: _StubThreadRepository(),
+      modelRepository: _StubModelRepository(),
+      skillRepository: _StubSkillRepository(),
+    );
+    for (final entry in [(id: "older", time: 10, model: "old-model"), (id: "newer", time: 20, model: "new-model")]) {
+      service.decodeStartedNotificationParams(
+        params: {
+          "model": entry.model,
+          "thread": {"id": entry.id, "cwd": "/repo", "modelProvider": "openai", "updatedAt": entry.time},
+        },
+      );
+    }
+    expect((await service.resolveModelDefaults(projectId: "/repo")).modelID, "new-model");
+  });
+
   test("detaching clears app-server loaded-thread state", () async {
     final service = _newService();
     final firstRepository = _StubThreadRepository();
@@ -614,6 +634,7 @@ class _StubModelRepository({
 }) extends CodexModelRepository {
   this
     : super(
+        openAiModelApi: CodexOpenAiModelApi(apiKey: null, requestTimeout: const Duration(seconds: 1)),
         appServerApi: CodexAppServerApi(
           client: CodexAppServerClient(serverUrl: "ws://127.0.0.1:0", channelFactory: null, onDisconnected: null),
         ),
@@ -657,7 +678,7 @@ class _StubAuthenticationRepository() extends CodexAuthenticationRepository {
       );
 
   @override
-  Future<CodexAuthenticationMode?> readMode() async => CodexAuthenticationMode.chatgptSubscription;
+  Future<CodexAccountKind?> readAccountKind() async => CodexAccountKind.chatgpt;
 }
 
 class _StubThreadRepository() extends CodexThreadRepository {

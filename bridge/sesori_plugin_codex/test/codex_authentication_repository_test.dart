@@ -68,6 +68,17 @@ void main() {
       await repository.dispose();
     });
 
+    test("account discovery uses the repository request timeout", () async {
+      final transport = _AuthenticationTransport();
+      final repository = CodexAuthenticationRepository(
+        appServerApi: CodexAppServerApi(client: transport),
+        requestTimeout: const Duration(milliseconds: 73),
+      );
+      addTearDown(repository.dispose);
+      expect(await repository.readAccountKind(), isNotNull);
+      expect(transport.timeouts, [const Duration(milliseconds: 73)]);
+    });
+
     test("cancels only with the retained private login id", () async {
       final transport = _AuthenticationTransport();
       final repository = CodexAuthenticationRepository(
@@ -123,6 +134,12 @@ class _AuthenticationTransport({
     required Duration timeout,
   }) async {
     timeouts.add(timeout);
+    if (method == "account/read") {
+      return {
+        "account": {"type": "apiKey"},
+        "requiresOpenaiAuth": true,
+      };
+    }
     if (method == "account/login/start") {
       await startResponse;
       return {

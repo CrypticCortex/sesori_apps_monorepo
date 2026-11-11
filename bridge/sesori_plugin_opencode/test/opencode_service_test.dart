@@ -152,6 +152,7 @@ void main() {
         providers: const PluginProvidersResult(
           providers: [
             PluginProvider(
+              isSessionFixed: false,
               id: "provider",
               name: "Provider",
               authType: PluginProviderAuthType.unknown,

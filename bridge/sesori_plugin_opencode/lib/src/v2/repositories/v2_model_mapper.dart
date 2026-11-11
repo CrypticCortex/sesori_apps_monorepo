@@ -102,6 +102,7 @@ class const V2ModelMapper({required final String _pluginId}) {
       for (final provider in providers)
         if (provider.activation != ProviderInfoActivation.disabled)
           PluginProvider(
+            isSessionFixed: false,
             id: provider.id,
             name: provider.name,
             authType: PluginProviderAuthType.unknown,

@@ -171,6 +171,7 @@ class AntigravitySessionOptionsService({
             ? const []
             : [
                 PluginProvider(
+                  isSessionFixed: false,
                   id: AntigravityIdentity.pluginId,
                   name: AntigravityIdentity.displayName,
                   authType: PluginProviderAuthType.oauth,

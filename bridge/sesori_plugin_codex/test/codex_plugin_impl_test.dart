@@ -134,16 +134,33 @@ void main() {
         );
 
         const serverUrl = "ws://127.0.0.1:0";
+        final fake = _FakeWebSocket();
+        fake.outgoing.listen((frame) {
+          final request = jsonDecode(frame as String) as Map<String, dynamic>;
+          if (request["id"] == null) return;
+          final result = switch (request["method"]) {
+            "initialize" => _initOk,
+            "account/read" => {
+              "account": {"type": "chatgpt"},
+              "requiresOpenaiAuth": true,
+            },
+            "model/list" => {"data": <Object>[], "nextCursor": null},
+            _ => <String, dynamic>{},
+          };
+          fake.serverSink.add(jsonEncode({"jsonrpc": "2.0", "id": request["id"], "result": result}));
+        });
         final plugin = createInjectedCodexPlugin(
           serverUrl: serverUrl,
           environment: {"CODEX_HOME": tempHome.path},
           projectCwd: "/repo/example",
-          clientFactory: () => CodexAppServerClient(serverUrl: serverUrl, channelFactory: null, onDisconnected: null),
+          clientFactory: () =>
+              CodexAppServerClient(serverUrl: serverUrl, channelFactory: (_) => fake.channel, onDisconnected: null),
           keepaliveInterval: const Duration(seconds: 30),
           toolOutcomeRepository: createMemoryCodexToolOutcomeRepository(),
           runtimeExit: runningCodexRuntime,
         );
 
+        await plugin.initialize();
         final agents = await plugin.getAgents(projectId: "/repo/example");
         expect(agents.map((agent) => agent.name), equals(["Agent"]));
         final agent = agents.first;
@@ -865,11 +882,19 @@ Future<({CodexPlugin plugin, int Function() connectionCount})> _dropMidTurn({
 Map<String, Object?>? _resumeReply({required String method, required String? threadId, required String turnStatus}) =>
     switch (method) {
       "initialize" => const {"result": _initOk},
-      "thread/resume" => {
+      "account/read" => const {
         "result": {
+          "account": {"type": "chatgpt"},
+          "requiresOpenaiAuth": true,
+        },
+      },
+      "thread/read" || "thread/resume" => {
+        "result": {
+          "modelProvider": "openai",
           "thread": {
             "id": threadId,
             "cwd": "/repo/example",
+            "modelProvider": "openai",
             "turns": [
               {"id": "turn-1", "status": turnStatus},
             ],

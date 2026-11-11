@@ -229,6 +229,7 @@ class HermesSessionOptionsService({
     return [
       for (final entry in entries)
         PluginProvider(
+          isSessionFixed: false,
           id: entry.key,
           name: providerNames[entry.key] ?? entry.key,
           authType: PluginProviderAuthType.unknown,
@@ -259,6 +260,7 @@ class HermesSessionOptionsService({
       ? const []
       : [
           PluginProvider(
+            isSessionFixed: false,
             id: providerId,
             name: _agentDisplayName,
             authType: PluginProviderAuthType.unknown,

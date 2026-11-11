@@ -88,6 +88,7 @@ final class const ClaudeBackendCatalogRepository() {
             ? const []
             : [
                 PluginProvider(
+                  isSessionFixed: false,
                   id: providerId,
                   name: "Anthropic",
                   authType: PluginProviderAuthType.oauth,

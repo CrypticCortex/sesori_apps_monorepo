@@ -231,6 +231,7 @@ class OmpSessionOptionsService({
     return [
       for (final entry in providers)
         PluginProvider(
+          isSessionFixed: false,
           id: entry.key,
           name: entry.key,
           authType: PluginProviderAuthType.unknown,

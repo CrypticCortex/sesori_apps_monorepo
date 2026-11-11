@@ -115,6 +115,7 @@ PluginProvider _mapProvider({
   // of trusting the API default. Plugins that publish a trustworthy default
   // (e.g. Cursor's ACP current model) set defaultModelID themselves.
   return PluginProvider(
+    isSessionFixed: false,
     id: id,
     name: name,
     authType: switch (id.toLowerCase()) {

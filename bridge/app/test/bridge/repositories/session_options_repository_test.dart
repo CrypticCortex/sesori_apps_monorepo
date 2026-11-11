@@ -343,6 +343,7 @@ PluginSessionOptions _pluginOptions({required String marker}) {
     providers: PluginProvidersResult(
       providers: [
         PluginProvider(
+          isSessionFixed: false,
           id: "provider-1",
           name: "Provider $marker",
           authType: PluginProviderAuthType.unknown,
